@@ -313,7 +313,7 @@ function updateCamera() {
 }
 
 function menuOptions() {
-  return ["Party", "Close"];
+  return ["Party","Save Game", "Close"];
 }
 
 function startMenuOptions() {
@@ -607,7 +607,10 @@ function handleMenuNavigation(key) {
         gameState.menu.mode = "party";
         gameState.menu.partyIndex = gameState.player.activeIndex;
         setMessage("Browsing your captured creatures.");
-      } else {
+      }else if(selected == "Save Game"){
+        setMessage("Saving not yet implemented");
+      } 
+      else {
         closeMenu();
       }
     } else if (key === "Escape") {
@@ -906,7 +909,7 @@ function drawMenuOverlay() {
 
   if (gameState.menu.mode === "main") {
     const options = menuOptions();
-    drawRoundedRect(canvas.width - 250, 28, 210, 180, 18, "rgba(255, 250, 243, 0.98)", "#3d271d");
+    drawRoundedRect(canvas.width - 250, 28, 210, 250, 18, "rgba(255, 250, 243, 0.98)", "#3d271d");
     drawText("Menu", canvas.width - 220, 58, { font: "14px 'Press Start 2P'", color: "#b93c2f" });
     options.forEach((option, index) => {
       const selected = index === gameState.menu.mainIndex;
