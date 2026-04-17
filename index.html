@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Echoes of Ember</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="layout">
+    <section class="game-shell">
+      <header class="game-header">
+        <div>
+          <p class="eyebrow">Browser RPG Prototype</p>
+          <h1>Echoes of Ember</h1>
+        </div>
+        <div class="controls-card">
+          <p><span>Move</span> Arrow keys / WASD</p>
+          <p><span>Menu</span> Enter / Mouse click</p>
+          <p><span>Screen</span> F key / button</p>
+        </div>
+      </header>
+
+      <div class="canvas-frame" id="canvas-frame">
+        <button id="fullscreen-toggle" class="fullscreen-button" type="button" aria-label="Toggle fullscreen">Fullscreen</button>
+        <canvas id="game" width="960" height="576" aria-label="Game canvas"></canvas>
+      </div>
+
+      <section class="hud-grid">
+        <article class="panel">
+          <h2>Quest Log</h2>
+          <p>Explore the meadow, trigger encounters in tall grass, and defeat wild creatures in turn-based battles.</p>
+        </article>
+        <article class="panel">
+          <h2>Starter Notes</h2>
+          <p>The code is organized so you can swap placeholder art, maps, party members, moves, and enemies later.</p>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <script type="module" src="src/game.js"></script>
+</body>
+</html>
