@@ -7,6 +7,7 @@ A lightweight JavaScript browser RPG prototype with:
 - Multiple maps connected by walk-on triggers such as cave mouths and doors
 - Pokemon-style turn-based battles with moves, healing, and escape chance
 - A Pokemon-inspired trainer menu and party screen for browsing captured creatures
+- A title screen with a simple start menu before gameplay begins
 
 ## Run it
 
@@ -14,6 +15,7 @@ Open `index.html` in a browser, or serve the folder with any simple static serve
 
 ## Controls
 
+- Start menu navigation: `W` / `S` or arrow keys, confirm with `Enter`
 - Move: `WASD` or arrow keys
 - Open trainer menu: `Enter`
 - Toggle fullscreen: `F` or the fullscreen button

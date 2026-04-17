@@ -186,10 +186,13 @@ const worldMaps = {
 };
 
 const gameState = {
-  scene: "world",
+  scene: "start",
   message: "Walk through tall grass to find a battle.",
   encounterFlash: 0,
   camera: { x: 0, y: 0 },
+  startMenu: {
+    index: 0
+  },
   menu: {
     mode: "main",
     mainIndex: 0,
@@ -303,6 +306,33 @@ function updateCamera() {
 
 function menuOptions() {
   return ["Party", "Close"];
+}
+
+function startMenuOptions() {
+  return ["Start Adventure", "View Controls"];
+}
+
+function beginNewGame() {
+  gameState.scene = "world";
+  gameState.message = `Welcome to ${currentMap().name}.`;
+  updateCamera();
+}
+
+function handleStartMenuNavigation(key) {
+  const options = startMenuOptions();
+
+  if (key === "ArrowUp" || key === "w") {
+    gameState.startMenu.index = (gameState.startMenu.index - 1 + options.length) % options.length;
+  } else if (key === "ArrowDown" || key === "s") {
+    gameState.startMenu.index = (gameState.startMenu.index + 1) % options.length;
+  } else if (key === "Enter") {
+    const selected = options[gameState.startMenu.index];
+    if (selected === "Start Adventure") {
+      beginNewGame();
+    } else {
+      gameState.message = "Move with WASD or arrows. Press Enter for your party menu. Press F for fullscreen.";
+    }
+  }
 }
 
 function openMenu() {
@@ -924,10 +954,68 @@ function drawMenuOverlay() {
   wrapText(viewedCreature.description, 516, 428, 324, 24);
 }
 
+function drawStartMenu() {
+  const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  sky.addColorStop(0, "#f6d365");
+  sky.addColorStop(0.52, "#f5a16c");
+  sky.addColorStop(1, "#c8553d");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "rgba(255, 249, 241, 0.18)";
+  ctx.beginPath();
+  ctx.arc(170, 120, 110, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(820, 98, 92, 0, Math.PI * 2);
+  ctx.fill();
+
+  drawRoundedRect(84, 70, 792, 184, 28, "rgba(255, 248, 238, 0.9)", "#3d271d");
+  drawText("Echoes of Ember", 480, 138, { font: "34px 'Press Start 2P'", color: "#b93c2f", align: "center" });
+  drawText("A meadow-born creature RPG", 480, 186, { font: "24px Outfit", color: "#694435", align: "center" });
+  drawText("Explore, battle, capture, and uncover connected maps.", 480, 222, {
+    font: "20px Outfit",
+    color: "#694435",
+    align: "center"
+  });
+
+  drawRoundedRect(124, 294, 332, 204, 24, "rgba(255, 248, 238, 0.96)", "#3d271d");
+  drawText("Start Menu", 166, 332, { font: "16px 'Press Start 2P'", color: "#b93c2f" });
+
+  startMenuOptions().forEach((option, index) => {
+    const selected = index === gameState.startMenu.index;
+    drawRoundedRect(154, 358 + index * 68, 272, 48, 14, selected ? "#c8553d" : "#fff3e2", "#3d271d");
+    drawText(option, 182, 389 + index * 68, {
+      font: "12px 'Press Start 2P'",
+      color: selected ? "#fff8f0" : "#2d1b14"
+    });
+  });
+
+  drawRoundedRect(496, 294, 340, 204, 24, "rgba(255, 248, 238, 0.96)", "#3d271d");
+  drawText("Controls", 532, 332, { font: "16px 'Press Start 2P'", color: "#2a7f62" });
+  drawText("Move", 532, 374, { font: "20px Outfit", color: "#694435" });
+  drawText("WASD / Arrow Keys", 672, 374, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+  drawText("Menu", 532, 410, { font: "20px Outfit", color: "#694435" });
+  drawText("Enter", 672, 410, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+  drawText("Fullscreen", 532, 446, { font: "20px Outfit", color: "#694435" });
+  drawText("F", 672, 446, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+  drawText("Select", 532, 482, { font: "20px Outfit", color: "#694435" });
+  drawText("Enter", 672, 482, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+
+  drawRoundedRect(104, 522, 752, 34, 14, "rgba(58, 30, 22, 0.42)");
+  drawText("Press Enter to begin your adventure.", 480, 544, {
+    font: "18px Outfit",
+    color: "#fff8f0",
+    align: "center"
+  });
+}
+
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  if (gameState.scene === "battle") {
+  if (gameState.scene === "start") {
+    drawStartMenu();
+  } else if (gameState.scene === "battle") {
     drawBattle();
   } else {
     drawWorld();
@@ -952,6 +1040,14 @@ window.addEventListener("keydown", (event) => {
   if (key === "f") {
     toggleFullscreen();
     event.preventDefault();
+    return;
+  }
+
+  if (gameState.scene === "start") {
+    if (["ArrowUp", "ArrowDown", "w", "s", "Enter"].includes(key)) {
+      handleStartMenuNavigation(key);
+      event.preventDefault();
+    }
     return;
   }
 
