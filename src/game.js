@@ -71,31 +71,32 @@ const worldMaps = {
     palette: { top: "#78c98b", bottom: "#5ea96f" },
     encounterRate: 0.24,
     terrain: [
-      "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGTTTTGGGGGGGGGGGGGGTTTTGGGGGGW",
-      "WGGTTTTGGGWWGGGGGGGGGGTTTTGGGGGW",
-      "WGGGGGGGGGWWGGGGGGGGGGGGGGGGGGGW",
-      "WGGGRRGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGRRGGGTTTTGGGGGGGGGTTTTGGGGGW",
-      "WGGGGGGGGTTTTGGGGGGGGGTTTTGGGGGW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGGTTTGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGGTTTGGGGGGGGGGGGGGGGRRGGGGGW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGW",
-      "WGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+      "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
+      "WGGTTTTGGGGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTTTTWWGGGGGGGGGGW",
+      "WGGTTTTGGGWWGGGGGGGGGGTTTTGGGGGWWWWWWWWWWWWWRRRWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGWWGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGGGGGGGW",
+      "WGGGRRGGGGGGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGGGGGGGW",
+      "WGGGRRGGGTTTTGGGGGGGGGTTTTGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
+      "WGGGGGGGGTTTTGGGGGGGGGTTTTGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
+      "WGGGGTTTGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTTRRRRRRTTTTTTTTTTTTTTTTTTTTW",
+      "WGGGGTTTGGGGGGGGGGGGGGGGRRGGGGGWTTTTTTTTTTTTTRRRRRRTTTTTTTTTTTTTTTTTTTTW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGWTTTTTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWWWWWWWWWWWWWWWWWRRRWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
+      "WGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
+      "WGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
+      "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
     ],
     signs: [
       { x: 5, y: 5, text: "Tall grass is alive with ember spirits." },
       { x: 21, y: 11, text: "Trainer tip: press Enter to open your trainer menu." },
-      { x: 25, y: 4, text: "A cave mouth waits to the east. Stay alert." }
+      { x: 25, y: 4, text: "A cave mouth waits to the east. Stay alert." },
+      { x: 45, y: 15, text: "Welcome to New Town." }
     ],
     triggers: [
       {
@@ -156,16 +157,16 @@ const worldMaps = {
   },
   wayfarerHouse: {
     name: "Wayfarer Cottage",
-    palette: { top: "#2d51a1", bottom: "#da3dc8" },
+    palette: { top: "#000000", bottom: "#020202" },
     encounterRate: 0,
     terrain: [
       "WWWWWWWWWW",
-      "WGGGGGGGGW",
-      "WGRRRRRRGW",
-      "WGRGGGGRGW",
-      "WGRGGGGRGW",
-      "WGRRRRRRGW",
-      "WGGGGGGGGW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
       "WWWWWWWWWW"
     ],
     signs: [
@@ -188,6 +189,7 @@ const worldMaps = {
 const gameState = {
   scene: "start",
   message: "Walk through tall grass to find a battle.",
+  messageShownAt: performance.now(),
   encounterFlash: 0,
   camera: { x: 0, y: 0 },
   startMenu: {
@@ -236,6 +238,11 @@ function getActiveCreature() {
   return gameState.player.party[gameState.player.activeIndex];
 }
 
+function setMessage(text) {
+  gameState.message = text;
+  gameState.messageShownAt = performance.now();
+}
+
 function currentMap() {
   return worldMaps[gameState.world.currentMapId];
 }
@@ -264,7 +271,7 @@ async function toggleFullscreen() {
       await canvasFrame.requestFullscreen();
     }
   } catch {
-    gameState.message = "Fullscreen is unavailable in this browser.";
+    setMessage("Fullscreen is unavailable in this browser.");
   }
 }
 
@@ -314,7 +321,7 @@ function startMenuOptions() {
 
 function beginNewGame() {
   gameState.scene = "world";
-  gameState.message = `Welcome to ${currentMap().name}.`;
+  setMessage(`Welcome to ${currentMap().name}.`);
   updateCamera();
 }
 
@@ -330,7 +337,7 @@ function handleStartMenuNavigation(key) {
     if (selected === "Start Adventure") {
       beginNewGame();
     } else {
-      gameState.message = "Move with WASD or arrows. Press Enter for your party menu. Press F for fullscreen.";
+      setMessage("Move with WASD or arrows. Press Enter for your party menu. Press F for fullscreen.");
     }
   }
 }
@@ -341,13 +348,13 @@ function openMenu() {
   gameState.menu.mode = "main";
   gameState.menu.mainIndex = 0;
   gameState.menu.partyIndex = gameState.player.activeIndex;
-  gameState.message = "Trainer menu opened.";
+  setMessage("Trainer menu opened.");
 }
 
 function closeMenu(message = "Back to exploring.") {
   gameState.scene = "world";
   gameState.menu.mode = "main";
-  gameState.message = message;
+  setMessage(message);
 }
 
 function captureCreature(species) {
@@ -360,7 +367,7 @@ function captureCreature(species) {
     captured: true
   });
   gameState.player.party.push(capturedCreature);
-  gameState.message = `${species} joined your party. Press Enter to view Party.`;
+  setMessage(`${species} joined your party. Press Enter to view Party.`);
   return true;
 }
 
@@ -415,7 +422,7 @@ function enterTrigger(trigger) {
   gameState.player.x = trigger.targetX;
   gameState.player.y = trigger.targetY;
   updateCamera();
-  gameState.message = trigger.message;
+  setMessage(trigger.message);
 }
 
 function movePlayer(dx, dy) {
@@ -424,7 +431,7 @@ function movePlayer(dx, dy) {
   const targetY = gameState.player.y + dy;
 
   if (!isWalkable(targetX, targetY)) {
-    gameState.message = "A stone ridge blocks the way.";
+    setMessage("A stone ridge blocks the way.");
     return;
   }
 
@@ -440,7 +447,7 @@ function movePlayer(dx, dy) {
 
   const sign = getSignAt(targetX, targetY);
   if (sign) {
-    gameState.message = sign.text;
+    setMessage(sign.text);
     return;
   }
 
@@ -449,7 +456,6 @@ function movePlayer(dx, dy) {
     return;
   }
 
-  gameState.message = `Exploring ${currentMap().name}.`;
 }
 
 function randomMoveId(moves) {
@@ -516,10 +522,10 @@ function resolveBattleOutcome() {
   const activeCreature = getActiveCreature();
 
   if (battle.enemy.hp <= 0) {
-    gameState.message = `${activeCreature.nickname} won in ${currentMap().name}. Total victories: ${gameState.player.wins}.`;
+    setMessage(`${activeCreature.nickname} won in ${currentMap().name}. Total victories: ${gameState.player.wins}.`);
   } else if (activeCreature.hp <= 0) {
     activeCreature.hp = activeCreature.maxHp;
-    gameState.message = `${activeCreature.nickname} fainted, then recovered back at camp.`;
+    setMessage(`${activeCreature.nickname} fainted, then recovered back at camp.`);
   }
 
   setTimeout(() => {
@@ -549,7 +555,7 @@ function playerAction(action) {
     }
   } else if (action.type === "run") {
     if (Math.random() < 0.65) {
-      gameState.message = "You escaped safely.";
+      setMessage("You escaped safely.");
       gameState.scene = "world";
       gameState.battle = null;
       return;
@@ -599,7 +605,7 @@ function handleMenuNavigation(key) {
       if (selected === "Party") {
         gameState.menu.mode = "party";
         gameState.menu.partyIndex = gameState.player.activeIndex;
-        gameState.message = "Browsing your captured creatures.";
+        setMessage("Browsing your captured creatures.");
       } else {
         closeMenu();
       }
@@ -618,10 +624,10 @@ function handleMenuNavigation(key) {
     } else if (key === "Enter") {
       gameState.player.activeIndex = gameState.menu.partyIndex;
       const activeCreature = getActiveCreature();
-      gameState.message = `${activeCreature.nickname} is now leading your party.`;
+      setMessage(`${activeCreature.nickname} is now leading your party.`);
     } else if (key === "Escape" || key === "Backspace") {
       gameState.menu.mode = "main";
-      gameState.message = "Trainer menu opened.";
+      setMessage("Trainer menu opened.");
     }
   }
 }
@@ -754,13 +760,24 @@ function drawWorld() {
   drawRoundedRect(playerX + 4, playerY + 4, 24, 30, 12, getActiveCreature().color);
   drawRoundedRect(playerX + 8, playerY + 8, 16, 10, 4, "#fff0d8");
 
-  drawRoundedRect(16, canvas.height - 116, canvas.width - 32, 100, 18, "rgba(255, 248, 238, 0.96)", "#3d271d");
-  drawText(currentMap().name, 38, canvas.height - 82, { font: "14px 'Press Start 2P'", color: "#b93c2f" });
-  ctx.font = "18px Outfit";
-  ctx.fillStyle = "#694435";
-  wrapText(gameState.message, 38, canvas.height - 50, canvas.width - 76, 24);
+  const elapsed = performance.now() - gameState.messageShownAt;
+  let messageOpacity = 1;
+  if (elapsed > 4000) {
+    messageOpacity = Math.max(0, 1 - (elapsed - 4000) / 1000);
+  }
 
-  drawRoundedRect(canvas.width - 280, 18, 262, 106, 18, "rgba(255, 248, 238, 0.94)", "#3d271d");
+  if (messageOpacity > 0) {
+    ctx.save();
+    ctx.globalAlpha = messageOpacity;
+    drawRoundedRect(16, canvas.height - 116, canvas.width - 32, 100, 18, "rgba(255, 248, 238, 0.92)", "#3d271d");
+    drawText(currentMap().name, 38, canvas.height - 82, { font: "14px 'Press Start 2P'", color: "#b93c2f" });
+    ctx.font = "18px Outfit";
+    ctx.fillStyle = "#694435";
+    wrapText(gameState.message, 38, canvas.height - 50, canvas.width - 76, 24);
+    ctx.restore();
+  }
+
+  drawRoundedRect(canvas.width - 280, 18, 262, 106, 18, "rgba(255, 248, 238, 0.45)", "#3d271d");
   drawText(getActiveCreature().nickname, canvas.width - 258, 44, { font: "14px 'Press Start 2P'" });
   drawText(`HP ${getActiveCreature().hp}/${getActiveCreature().maxHp}`, canvas.width - 258, 68, { font: "17px Outfit", color: "#2a7f62" });
   drawText(`Party ${gameState.player.party.length}`, canvas.width - 258, 90, { font: "17px Outfit" });
@@ -1092,7 +1109,7 @@ fullscreenToggle.addEventListener("click", () => {
 });
 
 document.addEventListener("fullscreenchange", () => {
-  fullscreenToggle.textContent = document.fullscreenElement ? "Windowed" : "Fullscreen";
+  fullscreenToggle.textContent = document.fullscreenElement ? "X" : "Fullscreen";
 });
 
 updateCamera();
