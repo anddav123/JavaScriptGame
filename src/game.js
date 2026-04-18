@@ -6,9 +6,27 @@ const fullscreenToggle = document.getElementById("fullscreen-toggle");
 const TILE_SIZE = 48;
 const VIEW_COLS = Math.floor(canvas.width / TILE_SIZE);
 const VIEW_ROWS = Math.floor(canvas.height / TILE_SIZE);
+const PLAYER_SPRITE_PATH = "assets/player-sprite.svg";
+const PLAYER_SPRITE_FRAME_SIZE = 16;
+const PLAYER_FACING_ROWS = {
+  down: 0,
+  left: 1,
+  right: 2,
+  up: 3
+};
 
 const keys = new Set();
 let mouse = { x: 0, y: 0 };
+let playerSpriteReady = false;
+
+const playerSprite = new Image();
+playerSprite.src = PLAYER_SPRITE_PATH;
+playerSprite.addEventListener("load", () => {
+  playerSpriteReady = true;
+});
+playerSprite.addEventListener("error", () => {
+  playerSpriteReady = false;
+});
 
 const moveCatalog = {
   ember: { name: "Ember", power: 16, accuracy: 0.92, color: "#ef6c3e" },
@@ -207,6 +225,9 @@ const gameState = {
   player: {
     x: 1,
     y: 1,
+    facing: "down",
+    walkFrame: 0,
+    lastMovedAt: 0,
     potions: 3,
     orbs: 5,
     wins: 0,
@@ -428,6 +449,16 @@ function enterTrigger(trigger) {
 
 function movePlayer(dx, dy) {
   if (gameState.scene !== "world") return;
+  if (dx < 0) {
+    gameState.player.facing = "left";
+  } else if (dx > 0) {
+    gameState.player.facing = "right";
+  } else if (dy < 0) {
+    gameState.player.facing = "up";
+  } else if (dy > 0) {
+    gameState.player.facing = "down";
+  }
+
   const targetX = gameState.player.x + dx;
   const targetY = gameState.player.y + dy;
 
@@ -438,6 +469,8 @@ function movePlayer(dx, dy) {
 
   gameState.player.x = targetX;
   gameState.player.y = targetY;
+  gameState.player.walkFrame = gameState.player.walkFrame === 1 ? 2 : 1;
+  gameState.player.lastMovedAt = performance.now();
   updateCamera();
 
   const trigger = getTriggerAt(targetX, targetY);
@@ -761,6 +794,40 @@ function drawSign(sign) {
   drawText("!", px + 12, py + 19, { align: "center", font: "18px 'Press Start 2P'", color: "#b93c2f" });
 }
 
+function drawPlayer(px, py) {
+  const isSpriteUsable =
+    playerSpriteReady &&
+    playerSprite.complete &&
+    playerSprite.naturalWidth >= PLAYER_SPRITE_FRAME_SIZE * 3 &&
+    playerSprite.naturalHeight >= PLAYER_SPRITE_FRAME_SIZE * 4;
+
+  if (!isSpriteUsable) {
+    drawRoundedRect(px + 8, py + 5, 32, 38, 14, "#ffffff", getActiveCreature().color);
+    drawRoundedRect(px + 12, py + 9, 24, 30, 12, getActiveCreature().color);
+    drawRoundedRect(px + 16, py + 13, 16, 10, 4, "#fff0d8");
+    return;
+  }
+
+  const facingRow = PLAYER_FACING_ROWS[gameState.player.facing] ?? PLAYER_FACING_ROWS.down;
+  const isIdle = performance.now() - gameState.player.lastMovedAt > 180;
+  const frameColumn = isIdle ? 0 : gameState.player.walkFrame;
+
+  ctx.save();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(
+    playerSprite,
+    frameColumn * PLAYER_SPRITE_FRAME_SIZE,
+    facingRow * PLAYER_SPRITE_FRAME_SIZE,
+    PLAYER_SPRITE_FRAME_SIZE,
+    PLAYER_SPRITE_FRAME_SIZE,
+    px,
+    py,
+    TILE_SIZE,
+    TILE_SIZE
+  );
+  ctx.restore();
+}
+
 function drawWorld() {
   updateCamera();
 
@@ -790,11 +857,9 @@ function drawWorld() {
     drawSign(sign);
   }
 
-  const playerX = worldToScreenX(gameState.player.x) + 8;
-  const playerY = worldToScreenY(gameState.player.y) + 5;
-  drawRoundedRect(playerX, playerY, 32, 38, 14, "#ffffff", getActiveCreature().color);
-  drawRoundedRect(playerX + 4, playerY + 4, 24, 30, 12, getActiveCreature().color);
-  drawRoundedRect(playerX + 8, playerY + 8, 16, 10, 4, "#fff0d8");
+  const playerX = worldToScreenX(gameState.player.x);
+  const playerY = worldToScreenY(gameState.player.y);
+  drawPlayer(playerX, playerY);
 
   const elapsed = performance.now() - gameState.messageShownAt;
   let messageOpacity = 1;
