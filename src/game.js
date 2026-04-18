@@ -73,12 +73,12 @@ const worldMaps = {
     encounterRate: 0.24,
     terrain: [
       "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGTTTTGGGGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTTTTWWGGGGGGGGGGW",
-      "WGGTTTTGGGWWGGGGGGGGGGTTTTGGGGGWWWWWWWWWWWWWRRRWWWWWWWWWWWWWWWWWWWWWWWWW",
-      "WGGGGGGGGGWWGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGRRGGGGGGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGRRGGGTTTTGGGGGGGGGTTTTGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
+      "WRRGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
+      "WRRTTTTGGGGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTTTTWWGGGGGGGGGGW",
+      "WRRTTTTGGGWWGGGGGGGGGGTTTTGGGGGWWWWWWWWWWWWWRRRWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WRRGGGGGGGWWGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGGGGGGGW",
+      "WRRRRRGGGGGGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGGGGGGGW",
+      "WRRRRRGGGTTTTGGGGGGGGGTTTTGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
       "WGGGGGGGGTTTTGGGGGGGGGTTTTGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
       "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
       "WGGGGTTTGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTTRRRRRRTTTTTTTTTTTTTTTTTTTTW",
@@ -205,8 +205,8 @@ const gameState = {
     currentMapId: "sunmeadow"
   },
   player: {
-    x: 2,
-    y: 2,
+    x: 1,
+    y: 1,
     potions: 3,
     orbs: 5,
     wins: 0,
@@ -1047,13 +1047,13 @@ function drawStartMenu() {
   drawRoundedRect(496, 294, 340, 204, 24, "rgba(255, 248, 238, 0.96)", "#3d271d");
   drawText("Controls", 532, 332, { font: "16px 'Press Start 2P'", color: "#2a7f62" });
   drawText("Move", 532, 374, { font: "20px Outfit", color: "#694435" });
-  drawText("WASD / Arrow Keys", 672, 374, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+  drawText("WASD / Arrow Keys", 800, 374, { font: "20px Outfit", color: "#2d1b14", align: "right" });
   drawText("Menu", 532, 410, { font: "20px Outfit", color: "#694435" });
-  drawText("Enter", 672, 410, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+  drawText("Enter", 800, 410, { font: "20px Outfit", color: "#2d1b14", align: "right" });
   drawText("Fullscreen", 532, 446, { font: "20px Outfit", color: "#694435" });
-  drawText("F", 672, 446, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+  drawText("F", 800, 446, { font: "20px Outfit", color: "#2d1b14", align: "right" });
   drawText("Select", 532, 482, { font: "20px Outfit", color: "#694435" });
-  drawText("Enter", 672, 482, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+  drawText("Enter", 800, 482, { font: "20px Outfit", color: "#2d1b14", align: "right" });
 
   drawRoundedRect(104, 522, 752, 34, 14, "rgba(58, 30, 22, 0.42)");
   drawText("Press Enter to begin your adventure.", 480, 544, {
