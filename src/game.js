@@ -13,7 +13,7 @@ let mouse = { x: 0, y: 0 };
 const moveCatalog = {
   ember: { name: "Ember", power: 16, accuracy: 0.92, color: "#ef6c3e" },
   vineSnap: { name: "Vine Snap", power: 14, accuracy: 0.95, color: "#2d8f64" },
-  iceShard: {name: "Ice Shard", power: 25, accuracy: 0.5, color: "#9af0f0" },
+  iceShard: { name: "Ice Shard", power: 25, accuracy: 0.5, color: "#9af0f0" },
   focus: { name: "Focus", power: 0, accuracy: 1, color: "#6c5ce7", buff: 5 },
   tonic: { name: "Tonic", power: 0, accuracy: 1, color: "#2a9d8f", heal: 16 }
 };
@@ -97,7 +97,7 @@ const worldMaps = {
       { x: 5, y: 5, text: "Tall grass is alive with ember spirits." },
       { x: 21, y: 11, text: "Trainer tip: press Enter to open your trainer menu." },
       { x: 25, y: 4, text: "A cave mouth waits to the east. Stay alert." },
-      { x: 45, y: 15, text: "Welcome to New Town." }
+      { x: 47, y: 14, text: "Welcome to New Town." }
     ],
     triggers: [
       {
@@ -313,7 +313,7 @@ function updateCamera() {
 }
 
 function menuOptions() {
-  return ["Party","Save Game", "Close"];
+  return ["Party", "Save Game", "Close"];
 }
 
 function startMenuOptions() {
@@ -432,7 +432,7 @@ function movePlayer(dx, dy) {
   const targetY = gameState.player.y + dy;
 
   if (!isWalkable(targetX, targetY)) {
-    setMessage("A stone ridge blocks the way.");
+    setMessage("Unable to go this way.");
     return;
   }
 
@@ -607,9 +607,9 @@ function handleMenuNavigation(key) {
         gameState.menu.mode = "party";
         gameState.menu.partyIndex = gameState.player.activeIndex;
         setMessage("Browsing your captured creatures.");
-      }else if(selected == "Save Game"){
+      } else if (selected == "Save Game") {
         setMessage("Saving not yet implemented");
-      } 
+      }
       else {
         closeMenu();
       }
@@ -700,7 +700,39 @@ function drawMapTile(tile, px, py) {
       ctx.stroke();
     }
   } else if (tile === "R") {
-    drawRoundedRect(px + 8, py + 8, TILE_SIZE - 16, TILE_SIZE - 16, 8, "#c49a6c");
+    drawRoundedRect(px, py, TILE_SIZE, TILE_SIZE, 0, "#e8c096");
+    ctx.strokeStyle = "#a8a8a3";
+    ctx.lineWidth = 1;
+
+    // Top line
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px + TILE_SIZE, py);
+    ctx.stroke();
+
+    // Vertical middle line
+    ctx.beginPath();
+    ctx.moveTo(px, py);
+    ctx.lineTo(px, py + TILE_SIZE/2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(px + TILE_SIZE/2, py + TILE_SIZE/2);
+    ctx.lineTo(px + TILE_SIZE/2, py + TILE_SIZE);
+    ctx.stroke();
+
+    // Horizontal middle line
+    ctx.beginPath();
+    ctx.moveTo(px, py + TILE_SIZE/2 );
+    ctx.lineTo(px + TILE_SIZE, py + TILE_SIZE/2);
+    ctx.stroke();
+
+    // Bottom line
+    ctx.beginPath();
+    ctx.moveTo(px, py + TILE_SIZE);
+    ctx.lineTo(px + TILE_SIZE, py + TILE_SIZE);
+    ctx.stroke();
+  
   }
 }
 
@@ -927,7 +959,7 @@ function drawMenuOverlay() {
         color: selected ? "#fff8f0" : "#2d1b14"
       });
     });
-    drawText("Enter: choose", canvas.width - 220, 184, { font: "14px Outfit", color: "#694435" });
+    drawText("Enter: choose", canvas.width - 220, 250, { font: "14px Outfit", color: "#694435" });
     return;
   }
 
