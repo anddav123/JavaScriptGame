@@ -408,7 +408,7 @@ function attemptCatch() {
   const healthRatio = enemy.hp / enemy.maxHp;
   const catchChance = clamp(0.2 + (1 - healthRatio) * 0.65 + (alreadyOwned ? -0.08 : 0.05), 0.12, 0.92);
 
-  writeBattleLog(`You threw an ember orb at ${enemy.name}.`);
+  writeBattleLog(`You threw an capture orb at ${enemy.name}.`);
 
   if (Math.random() <= catchChance) {
     captureCreature(enemy.name);
@@ -1024,7 +1024,7 @@ function drawMenuOverlay() {
         color: selected ? "#fff8f0" : "#2d1b14"
       });
     });
-    drawText("Enter: choose", canvas.width - 220, 250, { font: "14px Outfit", color: "#694435" });
+    drawText("Enter: choose", canvas.width - 220, 260, { font: "14px Outfit", color: "#694435" });
     return;
   }
 
@@ -1089,7 +1089,7 @@ function drawStartMenu() {
   ctx.fill();
 
   drawRoundedRect(84, 70, 792, 184, 28, "rgba(255, 248, 238, 0.9)", "#3d271d");
-  drawText("Echoes of Ember", 480, 138, { font: "34px 'Press Start 2P'", color: "#b93c2f", align: "center" });
+  drawText("Orb Bound", 480, 138, { font: "34px 'Press Start 2P'", color: "#b93c2f", align: "center" });
   drawText("A meadow-born creature RPG", 480, 186, { font: "24px Outfit", color: "#694435", align: "center" });
   drawText("Explore, battle, capture, and uncover connected maps.", 480, 222, {
     font: "20px Outfit",
