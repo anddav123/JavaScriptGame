@@ -9,6 +9,7 @@ const VIEW_ROWS = Math.floor(canvas.height / TILE_SIZE);
 const PLAYER_SPRITE_PATH = "assets/player-sprite.svg";
 const PLAYER_SPRITE_FRAME_SIZE = 16;
 const CREATURE_SPRITE_SIZE = 96;
+const SAVE_VERSION = 1;
 const PLAYER_FACING_ROWS = {
   down: 0,
   left: 1,
@@ -39,31 +40,34 @@ const moveCatalog = {
 };
 
 const creatureTemplates = {
-  Pyrel: {
-    species: "Pyrel",
-    nickname: "Pyrel",
-    color: "#d64545",
-    spritePath: "assets/creatures/pyrel-sprite.svg",
+  Roselle: {
+    species: "Roselle",
+    nickname: "Roselle",
+    color: "#fc8ccd",
+    spritePath: "assets/creatures/pyrel-sprite.png",
+    fallbackSpritePath: "assets/creatures/pyrel-sprite.svg",
     role: "Starter",
     maxHp: 58,
     moves: ["ember", "vineSnap", "focus", "tonic"],
     description: "A warm-hearted ember fox that leads the party into danger."
   },
-  Mossling: {
-    species: "Mossling",
-    nickname: "Mossling",
+  Folio: {
+    species: "Folio",
+    nickname: "Folio",
     color: "#4d9a63",
-    spritePath: "assets/creatures/mossling-sprite.svg",
+    spritePath: "assets/creatures/mossling-sprite.png",
+    fallbackSpritePath: "assets/creatures/mossling-sprite.svg",
     role: "Wildling",
     maxHp: 42,
     moves: ["vineSnap", "focus"],
     description: "A shy meadow creature that hides in moss and strikes with vines."
   },
-  Cindercub: {
-    species: "Cindercub",
-    nickname: "Cindercub",
+  Scorcha: {
+    species: "Scorcha",
+    nickname: "Scorcha",
     color: "#d15b38",
-    spritePath: "assets/creatures/cindercub-sprite.svg",
+    spritePath: "assets/creatures/cindercub-sprite.png",
+    fallbackSpritePath: "assets/creatures/cindercub-sprite.svg",
     role: "Wildling",
     maxHp: 40,
     moves: ["ember", "focus"],
@@ -73,7 +77,8 @@ const creatureTemplates = {
     species: "Ripplefin",
     nickname: "Ripplefin",
     color: "#4d77b4",
-    spritePath: "assets/creatures/ripplefin-sprite.svg",
+    spritePath: "assets/creatures/ripplefin-sprite.png",
+    fallbackSpritePath: "assets/creatures/ripplefin-sprite.svg",
     role: "Wildling",
     maxHp: 44,
     moves: ["vineSnap", "tonic", "iceShard"],
@@ -82,7 +87,7 @@ const creatureTemplates = {
 };
 
 const enemyTemplates = Object.values(creatureTemplates)
-  .filter((creature) => creature.species !== "Pyrel")
+  .filter((creature) => creature.species !== "Roselle")
   .map((creature) => ({
     name: creature.species,
     color: creature.color,
@@ -240,7 +245,7 @@ const gameState = {
     wins: 0,
     activeIndex: 0,
     party: [
-      createCreatureInstance("Pyrel", { nickname: "Pyrel", role: "Starter", captured: true })
+      createCreatureInstance("Roselle", { nickname: "Roselle", role: "Starter", captured: true })
     ]
   },
   battle: null,
@@ -278,14 +283,34 @@ function ensureCreatureSprite(species) {
   }
 
   const image = new Image();
-  const spriteRecord = { image, ready: false };
-  image.src = template.spritePath;
+  const spriteSources = [template.spritePath, template.fallbackSpritePath].filter(Boolean);
+  const spriteRecord = {
+    image,
+    ready: false,
+    usesPixelArtScaling: false
+  };
+  let sourceIndex = 0;
+
+  function loadNextSource() {
+    const nextSource = spriteSources[sourceIndex];
+    if (!nextSource) {
+      spriteRecord.ready = false;
+      return;
+    }
+
+    image.src = nextSource;
+  }
+
   image.addEventListener("load", () => {
     spriteRecord.ready = true;
+    spriteRecord.usesPixelArtScaling = image.src.toLowerCase().endsWith(".svg");
   });
   image.addEventListener("error", () => {
-    spriteRecord.ready = false;
+    sourceIndex += 1;
+    loadNextSource();
   });
+
+  loadNextSource();
   creatureSpriteRegistry[species] = spriteRecord;
   return spriteRecord;
 }
@@ -331,6 +356,7 @@ function drawCreatureSprite(creature, x, y, width, height, options = {}) {
   const offsetY = innerY + (innerHeight - drawHeight) / 2;
 
   ctx.save();
+  ctx.imageSmoothingEnabled = !spriteRecord.usesPixelArtScaling;
   traceRoundedRectPath(innerX, innerY, innerWidth, innerHeight, Math.max(10, radius - 8));
   ctx.clip();
 
@@ -361,6 +387,147 @@ function currentMapCols() {
 
 function currentMapRows() {
   return currentMap().terrain.length;
+}
+
+function isValidMapId(mapId) {
+  return typeof mapId === "string" && Boolean(worldMaps[mapId]);
+}
+
+function normalizeCreatureSave(creature, index) {
+  if (!creature || typeof creature !== "object" || typeof creature.species !== "string" || !creatureTemplates[creature.species]) {
+    throw new Error(`Party member ${index + 1} is invalid.`);
+  }
+
+  const template = creatureTemplates[creature.species];
+  return createCreatureInstance(creature.species, {
+    nickname: typeof creature.nickname === "string" && creature.nickname.trim() ? creature.nickname.trim() : template.nickname,
+    role: typeof creature.role === "string" && creature.role.trim() ? creature.role.trim() : template.role,
+    maxHp: Number.isFinite(creature.maxHp) ? Math.max(1, Math.round(creature.maxHp)) : template.maxHp,
+    hp: Number.isFinite(creature.hp) ? Math.max(0, Math.round(creature.hp)) : template.maxHp,
+    captured: Boolean(creature.captured)
+  });
+}
+
+function serializeGameState() {
+  return {
+    saveVersion: SAVE_VERSION,
+    world: {
+      currentMapId: gameState.world.currentMapId
+    },
+    player: {
+      x: gameState.player.x,
+      y: gameState.player.y,
+      facing: gameState.player.facing,
+      potions: gameState.player.potions,
+      orbs: gameState.player.orbs,
+      wins: gameState.player.wins,
+      activeIndex: gameState.player.activeIndex,
+      party: gameState.player.party.map((creature) => ({
+        species: creature.species,
+        nickname: creature.nickname,
+        role: creature.role,
+        maxHp: creature.maxHp,
+        hp: creature.hp,
+        captured: creature.captured
+      }))
+    }
+  };
+}
+
+async function exportSaveJson() {
+  if (gameState.scene === "battle") {
+    setMessage("Finish the battle before saving.");
+    return false;
+  }
+
+  const saveJson = JSON.stringify(serializeGameState(), null, 2);
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(saveJson);
+      setMessage("Save JSON copied to your clipboard.");
+      return true;
+    } catch (error) {
+      // Fall back to a prompt when clipboard permissions are unavailable.
+    }
+  }
+
+  window.prompt("Copy your save JSON:", saveJson);
+  setMessage("Save JSON ready to copy.");
+  return true;
+}
+
+function importSaveJson(saveJson) {
+  let parsedSave;
+  try {
+    parsedSave = JSON.parse(saveJson);
+  } catch (error) {
+    throw new Error("That save data is not valid JSON.");
+  }
+
+  if (!parsedSave || typeof parsedSave !== "object") {
+    throw new Error("Save data must be a JSON object.");
+  }
+
+  if (parsedSave.saveVersion !== SAVE_VERSION) {
+    throw new Error("This save version is not supported.");
+  }
+
+  if (!isValidMapId(parsedSave.world?.currentMapId)) {
+    throw new Error("Save data references an unknown map.");
+  }
+
+  if (!Array.isArray(parsedSave.player?.party) || parsedSave.player.party.length === 0) {
+    throw new Error("Save data must include at least one party member.");
+  }
+
+  const party = parsedSave.player.party.map((creature, index) => normalizeCreatureSave(creature, index));
+  const activeIndex = Number.isInteger(parsedSave.player.activeIndex)
+    ? clamp(parsedSave.player.activeIndex, 0, party.length - 1)
+    : 0;
+  const facing = PLAYER_FACING_ROWS[parsedSave.player.facing] !== undefined ? parsedSave.player.facing : "down";
+  const nextPlayer = {
+    ...gameState.player,
+    x: Number.isInteger(parsedSave.player.x) ? parsedSave.player.x : 1,
+    y: Number.isInteger(parsedSave.player.y) ? parsedSave.player.y : 1,
+    facing,
+    walkFrame: 0,
+    lastMovedAt: 0,
+    potions: Number.isFinite(parsedSave.player.potions) ? Math.max(0, Math.round(parsedSave.player.potions)) : 0,
+    orbs: Number.isFinite(parsedSave.player.orbs) ? Math.max(0, Math.round(parsedSave.player.orbs)) : 0,
+    wins: Number.isFinite(parsedSave.player.wins) ? Math.max(0, Math.round(parsedSave.player.wins)) : 0,
+    activeIndex,
+    party
+  };
+
+  const previousMapId = gameState.world.currentMapId;
+  gameState.world.currentMapId = parsedSave.world.currentMapId;
+  if (!isWalkable(nextPlayer.x, nextPlayer.y)) {
+    gameState.world.currentMapId = previousMapId;
+    throw new Error("Save position is blocked on that map.");
+  }
+
+  gameState.player = nextPlayer;
+  gameState.scene = "world";
+  gameState.menu.mode = "main";
+  gameState.menu.mainIndex = 0;
+  gameState.menu.partyIndex = activeIndex;
+  gameState.startMenu.index = 0;
+  gameState.battle = null;
+  gameState.pointerHotspot = null;
+  updateCamera();
+  setMessage(`Adventure resumed in ${currentMap().name}.`);
+}
+
+function promptToLoadGame() {
+  const saveJson = window.prompt("Paste your save JSON to resume:");
+  if (saveJson === null) return;
+
+  try {
+    importSaveJson(saveJson);
+  } catch (error) {
+    window.alert(error.message || "Unable to load that save.");
+  }
 }
 
 function worldPixelWidth() {
@@ -424,7 +591,7 @@ function menuOptions() {
 }
 
 function startMenuOptions() {
-  return ["Start Adventure", "View Controls"];
+  return ["Start Adventure", "Load Adventure", "View Controls"];
 }
 
 function beginNewGame() {
@@ -444,8 +611,10 @@ function handleStartMenuNavigation(key) {
     const selected = options[gameState.startMenu.index];
     if (selected === "Start Adventure") {
       beginNewGame();
+    } else if (selected === "Load Adventure") {
+      promptToLoadGame();
     } else {
-      setMessage("Move with WASD or arrows. Press Enter for your party menu. Press F for fullscreen.");
+      setMessage("Move with WASD or arrows. Press Enter for your trainer menu. Press F for fullscreen.");
     }
   }
 }
@@ -711,7 +880,7 @@ function handleWorldInput() {
   keys.clear();
 }
 
-function handleMenuNavigation(key) {
+async function handleMenuNavigation(key) {
   if (gameState.scene !== "menu") return;
 
   if (gameState.menu.mode === "main") {
@@ -726,10 +895,9 @@ function handleMenuNavigation(key) {
         gameState.menu.mode = "party";
         gameState.menu.partyIndex = gameState.player.activeIndex;
         setMessage("Browsing your captured creatures.");
-      } else if (selected == "Save Game") {
-        setMessage("Saving not yet implemented");
-      }
-      else {
+      } else if (selected === "Save Game") {
+        await exportSaveJson();
+      } else {
         closeMenu();
       }
     } else if (key === "Escape") {
@@ -1197,8 +1365,8 @@ function drawStartMenu() {
 
   startMenuOptions().forEach((option, index) => {
     const selected = index === gameState.startMenu.index;
-    drawRoundedRect(154, 358 + index * 68, 272, 48, 14, selected ? "#c8553d" : "#fff3e2", "#3d271d");
-    drawText(option, 182, 389 + index * 68, {
+    drawRoundedRect(154, 358 + index * 52, 272, 40, 14, selected ? "#c8553d" : "#fff3e2", "#3d271d");
+    drawText(option, 182, 384 + index * 52, {
       font: "12px 'Press Start 2P'",
       color: selected ? "#fff8f0" : "#2d1b14"
     });
@@ -1216,7 +1384,7 @@ function drawStartMenu() {
   drawText("Enter", 800, 482, { font: "20px Outfit", color: "#2d1b14", align: "right" });
 
   drawRoundedRect(104, 522, 752, 34, 14, "rgba(58, 30, 22, 0.42)");
-  drawText("Press Enter to begin your adventure.", 480, 544, {
+  drawText("Start fresh or load a JSON save to continue.", 480, 544, {
     font: "18px Outfit",
     color: "#fff8f0",
     align: "center"

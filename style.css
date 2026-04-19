@@ -175,7 +175,7 @@ canvas {
   height: auto;
   border-radius: 18px;
   background: #8ed1a4;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .hud-grid {
