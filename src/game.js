@@ -8,6 +8,7 @@ const VIEW_COLS = Math.floor(canvas.width / TILE_SIZE);
 const VIEW_ROWS = Math.floor(canvas.height / TILE_SIZE);
 const PLAYER_SPRITE_PATH = "assets/player-sprite.svg";
 const PLAYER_SPRITE_FRAME_SIZE = 16;
+const CREATURE_SPRITE_SIZE = 96;
 const PLAYER_FACING_ROWS = {
   down: 0,
   left: 1,
@@ -18,6 +19,7 @@ const PLAYER_FACING_ROWS = {
 const keys = new Set();
 let mouse = { x: 0, y: 0 };
 let playerSpriteReady = false;
+const creatureSpriteRegistry = {};
 
 const playerSprite = new Image();
 playerSprite.src = PLAYER_SPRITE_PATH;
@@ -41,6 +43,7 @@ const creatureTemplates = {
     species: "Pyrel",
     nickname: "Pyrel",
     color: "#d64545",
+    spritePath: "assets/creatures/pyrel-sprite.svg",
     role: "Starter",
     maxHp: 58,
     moves: ["ember", "vineSnap", "focus", "tonic"],
@@ -50,6 +53,7 @@ const creatureTemplates = {
     species: "Mossling",
     nickname: "Mossling",
     color: "#4d9a63",
+    spritePath: "assets/creatures/mossling-sprite.svg",
     role: "Wildling",
     maxHp: 42,
     moves: ["vineSnap", "focus"],
@@ -59,6 +63,7 @@ const creatureTemplates = {
     species: "Cindercub",
     nickname: "Cindercub",
     color: "#d15b38",
+    spritePath: "assets/creatures/cindercub-sprite.svg",
     role: "Wildling",
     maxHp: 40,
     moves: ["ember", "focus"],
@@ -68,6 +73,7 @@ const creatureTemplates = {
     species: "Ripplefin",
     nickname: "Ripplefin",
     color: "#4d77b4",
+    spritePath: "assets/creatures/ripplefin-sprite.svg",
     role: "Wildling",
     maxHp: 44,
     moves: ["vineSnap", "tonic", "iceShard"],
@@ -80,6 +86,7 @@ const enemyTemplates = Object.values(creatureTemplates)
   .map((creature) => ({
     name: creature.species,
     color: creature.color,
+    spritePath: creature.spritePath,
     maxHp: creature.maxHp,
     moves: creature.moves
   }));
@@ -246,6 +253,7 @@ function createCreatureInstance(species, overrides = {}) {
     species: template.species,
     nickname: overrides.nickname || template.nickname,
     color: template.color,
+    spritePath: template.spritePath,
     role: overrides.role || template.role,
     maxHp: overrides.maxHp || template.maxHp,
     hp: overrides.hp || template.maxHp,
@@ -258,6 +266,84 @@ function createCreatureInstance(species, overrides = {}) {
 
 function getActiveCreature() {
   return gameState.player.party[gameState.player.activeIndex];
+}
+
+function ensureCreatureSprite(species) {
+  if (creatureSpriteRegistry[species]) return creatureSpriteRegistry[species];
+
+  const template = creatureTemplates[species];
+  if (!template?.spritePath) {
+    creatureSpriteRegistry[species] = { image: null, ready: false };
+    return creatureSpriteRegistry[species];
+  }
+
+  const image = new Image();
+  const spriteRecord = { image, ready: false };
+  image.src = template.spritePath;
+  image.addEventListener("load", () => {
+    spriteRecord.ready = true;
+  });
+  image.addEventListener("error", () => {
+    spriteRecord.ready = false;
+  });
+  creatureSpriteRegistry[species] = spriteRecord;
+  return spriteRecord;
+}
+
+function traceRoundedRectPath(x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
+}
+
+function drawCreatureSprite(creature, x, y, width, height, options = {}) {
+  const { flip = false, frameColor = creature.color, padding = 10, radius = 24 } = options;
+  const spriteRecord = ensureCreatureSprite(creature.species || creature.name);
+
+  drawRoundedRect(x, y, width, height, radius, frameColor, "#ffffff");
+
+  if (!spriteRecord.ready) {
+    drawRoundedRect(
+      x + padding,
+      y + padding,
+      Math.max(18, width - padding * 2),
+      Math.max(18, height - padding * 2),
+      Math.max(10, radius - 8),
+      "rgba(255, 243, 231, 0.88)"
+    );
+    return;
+  }
+
+  const innerX = x + padding;
+  const innerY = y + padding;
+  const innerWidth = width - padding * 2;
+  const innerHeight = height - padding * 2;
+  const sourceWidth = spriteRecord.image.naturalWidth || CREATURE_SPRITE_SIZE;
+  const sourceHeight = spriteRecord.image.naturalHeight || CREATURE_SPRITE_SIZE;
+  const scale = Math.min(innerWidth / sourceWidth, innerHeight / sourceHeight);
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  const offsetX = innerX + (innerWidth - drawWidth) / 2;
+  const offsetY = innerY + (innerHeight - drawHeight) / 2;
+
+  ctx.save();
+  traceRoundedRectPath(innerX, innerY, innerWidth, innerHeight, Math.max(10, radius - 8));
+  ctx.clip();
+
+  if (flip) {
+    ctx.translate(offsetX + drawWidth, offsetY);
+    ctx.scale(-1, 1);
+    ctx.drawImage(spriteRecord.image, 0, 0, drawWidth, drawHeight);
+    ctx.restore();
+    return;
+  }
+
+  ctx.drawImage(spriteRecord.image, offsetX, offsetY, drawWidth, drawHeight);
+  ctx.restore();
 }
 
 function setMessage(text) {
@@ -670,13 +756,7 @@ function handleMenuNavigation(key) {
 }
 
 function drawRoundedRect(x, y, width, height, radius, fill, stroke = null) {
-  ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.arcTo(x + width, y, x + width, y + height, radius);
-  ctx.arcTo(x + width, y + height, x, y + height, radius);
-  ctx.arcTo(x, y + height, x, y, radius);
-  ctx.arcTo(x, y, x + width, y, radius);
-  ctx.closePath();
+  traceRoundedRectPath(x, y, width, height, radius);
   ctx.fillStyle = fill;
   ctx.fill();
   if (stroke) {
@@ -937,15 +1017,22 @@ function drawBattle() {
   ctx.beginPath();
   ctx.ellipse(720, 232, 132, 48, 0, 0, Math.PI * 2);
   ctx.fill();
-  drawRoundedRect(676, 146, 86, 96, 26, battle.enemy.color, "#ffffff");
-  drawRoundedRect(692, 168, 52, 20, 10, "#fff3e7");
+  drawCreatureSprite(battle.enemy, 664, 124, 118, 132, {
+    frameColor: battle.enemy.color,
+    padding: 8,
+    radius: 30
+  });
 
   ctx.fillStyle = activeCreature.color;
   ctx.beginPath();
   ctx.ellipse(240, 418, 148, 54, 0, 0, Math.PI * 2);
   ctx.fill();
-  drawRoundedRect(186, 302, 108, 124, 28, activeCreature.color, "#ffffff");
-  drawRoundedRect(206, 326, 68, 22, 10, "#fff3e7");
+  drawCreatureSprite(activeCreature, 168, 280, 148, 164, {
+    flip: true,
+    frameColor: activeCreature.color,
+    padding: 10,
+    radius: 34
+  });
 
   drawRoundedRect(38, 360, 884, 178, 20, "rgba(255, 251, 245, 0.97)", "#3d271d");
   drawText("Battle Log", 62, 394, { font: "14px 'Press Start 2P'", color: "#b93c2f" });
@@ -1037,7 +1124,11 @@ function drawMenuOverlay() {
     const active = index === gameState.player.activeIndex;
     const cardY = 104 + index * 82;
     drawRoundedRect(68, cardY, 378, 64, 14, selected ? "#f3a65a" : "#fff5ea", "#3d271d");
-    drawRoundedRect(86, cardY + 10, 46, 44, 14, creature.color, "#ffffff");
+    drawCreatureSprite(creature, 84, cardY + 6, 58, 52, {
+      frameColor: creature.color,
+      padding: 5,
+      radius: 16
+    });
     drawText(creature.nickname, 150, cardY + 24, { font: "12px 'Press Start 2P'", color: selected ? "#fff8f0" : "#2d1b14" });
     drawText(`${creature.species}  ${creature.role}`, 150, cardY + 48, {
       font: "16px Outfit",
@@ -1059,7 +1150,11 @@ function drawMenuOverlay() {
 
   const viewedCreature = gameState.player.party[gameState.menu.partyIndex];
   drawRoundedRect(484, 104, 398, 388, 16, "#fff7ef", "#3d271d");
-  drawRoundedRect(612, 132, 144, 132, 28, viewedCreature.color, "#ffffff");
+  drawCreatureSprite(viewedCreature, 602, 124, 164, 150, {
+    frameColor: viewedCreature.color,
+    padding: 10,
+    radius: 30
+  });
   drawText(viewedCreature.nickname, 516, 300, { font: "14px 'Press Start 2P'" });
   drawText(viewedCreature.species, 516, 332, { font: "20px Outfit", color: "#694435" });
   drawText(`Role: ${viewedCreature.role}`, 516, 360, { font: "18px Outfit", color: "#2a7f62" });
