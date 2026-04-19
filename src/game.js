@@ -591,7 +591,7 @@ function menuOptions() {
 }
 
 function startMenuOptions() {
-  return ["Start Adventure", "Load Adventure", "View Controls"];
+  return ["Start Adventure", "Load Adventure"];
 }
 
 function beginNewGame() {
@@ -613,9 +613,7 @@ function handleStartMenuNavigation(key) {
       beginNewGame();
     } else if (selected === "Load Adventure") {
       promptToLoadGame();
-    } else {
-      setMessage("Move with WASD or arrows. Press Enter for your trainer menu. Press F for fullscreen.");
-    }
+    } 
   }
 }
 
