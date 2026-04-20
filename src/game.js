@@ -623,18 +623,20 @@ function openMenu() {
   gameState.menu.mode = "main";
   gameState.menu.mainIndex = 0;
   gameState.menu.partyIndex = gameState.player.activeIndex;
-  setMessage("Trainer menu opened.");
+  //setMessage("Trainer menu opened.");
 }
 
-function closeMenu(message = "Back to exploring.") {
+function closeMenu() {
   gameState.scene = "world";
   gameState.menu.mode = "main";
-  setMessage(message);
+  //setMessage("Back to exploring.");
 }
 
 function captureCreature(species) {
-  const alreadyOwned = gameState.player.party.some((creature) => creature.species === species);
-  if (alreadyOwned) return false;
+
+  //if already owned do we want to catch again?
+  //const alreadyOwned = gameState.player.party.some((creature) => creature.species === species);
+  //if (alreadyOwned) return false;
 
   const capturedCreature = createCreatureInstance(species, {
     nickname: species,
@@ -688,7 +690,8 @@ function beginEncounter() {
     },
     turn: "player",
     log: [`A wild ${template.name} appeared!`],
-    buttons: []
+    buttons: [],
+    selectionIndex: 0
   };
 }
 
@@ -859,6 +862,110 @@ function playerAction(action) {
   setTimeout(enemyTurn, 600);
 }
 
+function battleMoveCount() {
+  return getActiveCreature().moves.length;
+}
+
+function battleMoveRowCount() {
+  return Math.ceil(battleMoveCount() / 2);
+}
+
+function battleSubmenuStartIndex() {
+  return battleMoveCount();
+}
+
+function moveSelectionIndex(direction) {
+  const battle = gameState.battle;
+  if (!battle || battle.buttons.length === 0) return 0;
+
+  const currentIndex = clamp(battle.selectionIndex ?? 0, 0, battle.buttons.length - 1);
+  const moveCount = battleMoveCount();
+  const submenuStart = battleSubmenuStartIndex();
+
+  if (currentIndex >= submenuStart) {
+    const submenuIndex = currentIndex - submenuStart;
+
+    if (direction === "left") {
+      return submenuStart + Math.max(0, submenuIndex - 1);
+    }
+
+    if (direction === "right") {
+      return submenuStart + Math.min(2, submenuIndex + 1);
+    }
+
+    if (direction === "up") {
+      return Math.min(moveCount - 1, 2);
+    }
+
+    return currentIndex;
+  }
+
+  const row = Math.floor(currentIndex / 2);
+  const col = currentIndex % 2;
+  const lastMoveIndex = moveCount - 1;
+  const lastRow = battleMoveRowCount() - 1;
+
+  if (direction === "left") {
+    if (col === 1) {
+      return currentIndex - 1;
+    }
+    return currentIndex;
+  }
+
+  if (direction === "right") {
+    if (col === 0 && currentIndex + 1 <= lastMoveIndex) {
+      return currentIndex + 1;
+    }
+    return currentIndex;
+  }
+
+  if (direction === "up") {
+    if (row === 0) {
+      return currentIndex;
+    }
+
+    const targetIndex = currentIndex - 2;
+    if (targetIndex <= lastMoveIndex) {
+      return targetIndex;
+    }
+
+    return lastMoveIndex;
+  }
+
+  if (direction === "down") {
+    const targetIndex = currentIndex + 2;
+
+    if (row < lastRow && targetIndex <= lastMoveIndex) {
+      return targetIndex;
+    }
+
+    return submenuStart + Math.min(col, 2);
+  }
+
+  return currentIndex;
+}
+
+function handleBattleNavigation(key) {
+  const battle = gameState.battle;
+  if (!battle || battle.turn !== "player") return;
+
+  if (battle.buttons.length === 0) {
+    battle.buttons = battleButtons();
+  }
+
+  if (key === "ArrowUp" || key === "w") {
+    battle.selectionIndex = moveSelectionIndex("up");
+  } else if (key === "ArrowDown" || key === "s") {
+    battle.selectionIndex = moveSelectionIndex("down");
+  } else if (key === "ArrowLeft" || key === "a") {
+    battle.selectionIndex = moveSelectionIndex("left");
+  } else if (key === "ArrowRight" || key === "d") {
+    battle.selectionIndex = moveSelectionIndex("right");
+  } else if (key === "Enter") {
+    playerAction(battle.buttons[battle.selectionIndex]);
+  }
+}
+
 function handleWorldInput() {
   if (gameState.scene !== "world") {
     keys.clear();
@@ -898,7 +1005,7 @@ async function handleMenuNavigation(key) {
       } else {
         closeMenu();
       }
-    } else if (key === "Escape") {
+    } else if (key === "Backspace") {
       closeMenu();
     }
     return;
@@ -914,7 +1021,7 @@ async function handleMenuNavigation(key) {
       gameState.player.activeIndex = gameState.menu.partyIndex;
       const activeCreature = getActiveCreature();
       setMessage(`${activeCreature.nickname} is now leading your party.`);
-    } else if (key === "Escape" || key === "Backspace") {
+    } else if (key === "Backspace") {
       gameState.menu.mode = "main";
       setMessage("Trainer menu opened.");
     }
@@ -1218,12 +1325,14 @@ function drawBattle() {
 
   const buttons = battleButtons();
   battle.buttons = buttons;
+  battle.selectionIndex = clamp(battle.selectionIndex ?? 0, 0, buttons.length - 1);
   gameState.pointerHotspot = null;
 
-  for (const button of buttons) {
+  buttons.forEach((button, index) => {
     const move = button.moveId ? moveCatalog[button.moveId] : null;
     const isHovered = mouse.x >= button.x && mouse.x <= button.x + button.width
       && mouse.y >= button.y && mouse.y <= button.y + button.height;
+    const isSelected = index === battle.selectionIndex;
 
     const fill = button.type === "move"
       ? move.color
@@ -1233,7 +1342,15 @@ function drawBattle() {
           ? "#9c6644"
           : "#7f5539";
 
-    drawRoundedRect(button.x, button.y, button.width, button.height, 14, fill, isHovered ? "#fff8f0" : "#3d271d");
+    drawRoundedRect(
+      button.x,
+      button.y,
+      button.width,
+      button.height,
+      14,
+      fill,
+      isHovered || isSelected ? "#dbcd0e" : "#3d271d"
+    );
     drawText(
       button.type === "move"
         ? move.name
@@ -1249,8 +1366,9 @@ function drawBattle() {
 
     if (isHovered) {
       gameState.pointerHotspot = button;
+      battle.selectionIndex = index;
     }
-  }
+  });
 
   drawText(
     battle.turn === "player" ? "Your turn" : `${battle.enemy.name} is acting...`,
@@ -1290,7 +1408,7 @@ function drawMenuOverlay() {
 
   drawRoundedRect(42, 40, 876, 492, 22, "rgba(255, 250, 243, 0.98)", "#3d271d");
   drawText("Party", 76, 74, { font: "16px 'Press Start 2P'", color: "#b93c2f" });
-  drawText("Enter: lead   Esc: back", 632, 74, { font: "16px Outfit", color: "#694435" });
+  drawText("Enter: lead   Backspace: back", 632, 74, { font: "16px Outfit", color: "#694435" });
 
   gameState.player.party.forEach((creature, index) => {
     const selected = index === gameState.menu.partyIndex;
@@ -1444,8 +1562,16 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (gameState.scene === "menu") {
-    if (movementKeys.includes(key) || ["Enter", "Escape", "Backspace"].includes(key)) {
+    if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
       handleMenuNavigation(key);
+      event.preventDefault();
+    }
+    return;
+  }
+
+  if (gameState.scene === "battle") {
+    if (movementKeys.includes(key) || key === "Enter") {
+      handleBattleNavigation(key);
       event.preventDefault();
     }
     return;
@@ -1463,6 +1589,19 @@ window.addEventListener("mousemove", (event) => {
     x: ((event.clientX - rect.left) / rect.width) * canvas.width,
     y: ((event.clientY - rect.top) / rect.height) * canvas.height
   };
+
+  if (gameState.scene !== "battle" || !gameState.battle) return;
+
+  const hoveredIndex = gameState.battle.buttons.findIndex((button) =>
+    mouse.x >= button.x
+    && mouse.x <= button.x + button.width
+    && mouse.y >= button.y
+    && mouse.y <= button.y + button.height
+  );
+
+  if (hoveredIndex >= 0) {
+    gameState.battle.selectionIndex = hoveredIndex;
+  }
 });
 
 canvas.addEventListener("click", () => {
