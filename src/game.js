@@ -960,25 +960,15 @@ function wrapText(text, x, y, maxWidth, lineHeight) {
 }
 
 function drawMapTile(tile, px, py) {
+  //draw wall
   if (tile === "W") {
     drawRoundedRect(px, py, TILE_SIZE, TILE_SIZE, 10, "#6f7a6a");
     drawRoundedRect(px + 6, py + 6, TILE_SIZE - 12, TILE_SIZE - 12, 8, "#8d9987");
     return;
   }
-
-  drawRoundedRect(px, py, TILE_SIZE, TILE_SIZE, 10, "#88cf8b");
-
-  if (tile === "T") {
-    for (let blade = 0; blade < 5; blade += 1) {
-      const bladeX = px + 8 + blade * 7;
-      ctx.strokeStyle = blade % 2 === 0 ? "#327f4a" : "#3ea65a";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(bladeX, py + TILE_SIZE - 10);
-      ctx.lineTo(bladeX + 3, py + 16 + (blade % 2) * 8);
-      ctx.stroke();
-    }
-  } else if (tile === "R") {
+  
+  //draw road
+  if (tile === "R") {
     drawRoundedRect(px, py, TILE_SIZE, TILE_SIZE, 0, "#e8c096");
     ctx.strokeStyle = "#a8a8a3";
     ctx.lineWidth = 1;
@@ -1012,7 +1002,24 @@ function drawMapTile(tile, px, py) {
     ctx.lineTo(px + TILE_SIZE, py + TILE_SIZE);
     ctx.stroke();
   
+    return;
   }
+
+  drawRoundedRect(px, py, TILE_SIZE, TILE_SIZE, 10, "#88cf8b");
+
+  if (tile === "T") {
+    for (let blade = 0; blade < 5; blade += 1) {
+      const bladeX = px + 8 + blade * 7;
+      ctx.strokeStyle = blade % 2 === 0 ? "#327f4a" : "#3ea65a";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(bladeX, py + TILE_SIZE - 10);
+      ctx.lineTo(bladeX + 3, py + 16 + (blade % 2) * 8);
+      ctx.stroke();
+    }
+    return;
+  } 
+  
 }
 
 function drawTrigger(trigger) {
