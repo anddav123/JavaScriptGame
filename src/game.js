@@ -100,7 +100,7 @@ const worldMaps = {
   sunmeadow: {
     name: "Sunmeadow",
     palette: { top: "#78c98b", bottom: "#5ea96f" },
-    encounterRate: 0.24,
+    encounterRate: 0.085,
     terrain: [
       "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
       "WRRGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
@@ -189,7 +189,7 @@ const worldMaps = {
   wayfarerHouse: {
     name: "Wayfarer Cottage",
     palette: { top: "#000000", bottom: "#020202" },
-    encounterRate: 0,
+    encounterRate: -1,
     terrain: [
       "WWWWWWWWWW",
       "WRRRRRRRRW",
@@ -221,7 +221,13 @@ const gameState = {
   scene: "start",
   message: "Walk through tall grass to find a battle.",
   messageShownAt: performance.now(),
-  encounterFlash: 0,
+  encounterTransition: {
+    active: false,
+    startedAt: 0,
+    duration: 1200,
+    switchAt: 540,
+    enemyName: ""
+  },
   camera: { x: 0, y: 0 },
   startMenu: {
     index: 0
@@ -379,6 +385,12 @@ function setMessage(text) {
   gameState.messageShownAt = performance.now();
 }
 
+function resetEncounterTransition() {
+  gameState.encounterTransition.active = false;
+  gameState.encounterTransition.startedAt = 0;
+  gameState.encounterTransition.enemyName = "";
+}
+
 function currentMap() {
   return worldMaps[gameState.world.currentMapId];
 }
@@ -517,6 +529,7 @@ function importSaveJson(saveJson) {
   gameState.startMenu.index = 0;
   gameState.battle = null;
   gameState.pointerHotspot = null;
+  resetEncounterTransition();
   updateCamera();
   setMessage(`Adventure resumed in ${currentMap().name}.`);
 }
@@ -681,8 +694,7 @@ function attemptCatch() {
 
 function beginEncounter() {
   const template = enemyTemplates[Math.floor(Math.random() * enemyTemplates.length)];
-  gameState.scene = "battle";
-  gameState.encounterFlash = 1;
+  keys.clear();
   getActiveCreature().attackBoost = 0;
   gameState.battle = {
     enemy: {
@@ -695,6 +707,10 @@ function beginEncounter() {
     buttons: [],
     selectionIndex: 0
   };
+  gameState.scene = "encounter";
+  gameState.encounterTransition.active = true;
+  gameState.encounterTransition.startedAt = performance.now();
+  gameState.encounterTransition.enemyName = template.name;
 }
 
 function enterTrigger(trigger) {
@@ -1253,6 +1269,74 @@ function drawHpBar(x, y, width, value, max, color) {
   drawRoundedRect(x + 2, y + 2, (width - 4) * (value / max), 12, 6, color);
 }
 
+function easeOutCubic(value) {
+  return 1 - (1 - value) ** 3;
+}
+
+function easeInCubic(value) {
+  return value ** 3;
+}
+
+function drawEncounterTransition() {
+  const transition = gameState.encounterTransition;
+  if (!transition.active) {
+    gameState.scene = "battle";
+    drawBattle();
+    return;
+  }
+
+  const elapsed = performance.now() - transition.startedAt;
+  const progress = clamp(elapsed / transition.duration, 0, 1);
+  const switchProgress = clamp(elapsed / transition.switchAt, 0, 1);
+  const showBattleScene = elapsed >= transition.switchAt;
+
+  if (showBattleScene) {
+    drawBattle();
+  } else {
+    drawWorld();
+  }
+
+  const flashOpacity = Math.max(0, 0.95 - switchProgress * 1.25);
+  if (flashOpacity > 0) {
+    ctx.fillStyle = `rgba(255, 250, 240, ${flashOpacity})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  const coverProgress = progress < 0.5
+    ? easeOutCubic(progress / 0.5)
+    : 1 - easeInCubic((progress - 0.5) / 0.5);
+  const bandCount = 10;
+  const bandHeight = Math.ceil(canvas.height / bandCount);
+
+  for (let index = 0; index < bandCount; index += 1) {
+    const width = canvas.width * coverProgress;
+    const x = index % 2 === 0 ? 0 : canvas.width - width;
+    const y = index * bandHeight;
+    const fill = index % 2 === 0 ? "#20110d" : "#5c2f1d";
+    ctx.fillStyle = fill;
+    ctx.fillRect(x, y, width, bandHeight + 2);
+  }
+
+  if (coverProgress > 0.2) {
+    const labelOpacity = clamp((coverProgress - 0.2) / 0.25, 0, 1) * (showBattleScene ? 1 - (progress - 0.5) / 0.5 : 1);
+    const labelScale = 0.92 + coverProgress * 0.1;
+
+    ctx.save();
+    ctx.globalAlpha = labelOpacity;
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.scale(labelScale, labelScale);
+    drawRoundedRect(-190, -40, 380, 80, 24, "rgba(255, 245, 233, 0.95)", "#3d271d");
+    drawText("Battle!", 0, -2, { align: "center", font: "18px 'Press Start 2P'", color: "#b93c2f" });
+    drawText(transition.enemyName, 0, 26, { align: "center", font: "20px Outfit", color: "#694435" });
+    ctx.restore();
+  }
+
+  if (progress >= 1) {
+    resetEncounterTransition();
+    gameState.scene = "battle";
+  }
+}
+
 function battleButtons() {
   const moves = getActiveCreature().moves.map((moveId, index) => {
     const x = 490 + (index % 2) * 210;
@@ -1523,6 +1607,8 @@ function render() {
 
   if (gameState.scene === "start") {
     drawStartMenu();
+  } else if (gameState.scene === "encounter") {
+    drawEncounterTransition();
   } else if (gameState.scene === "battle") {
     drawBattle();
   } else {
@@ -1530,12 +1616,6 @@ function render() {
     if (gameState.scene === "menu") {
       drawMenuOverlay();
     }
-  }
-
-  if (gameState.encounterFlash > 0) {
-    ctx.fillStyle = `rgba(255, 255, 255, ${gameState.encounterFlash})`;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    gameState.encounterFlash = Math.max(0, gameState.encounterFlash - 0.08);
   }
 
   requestAnimationFrame(render);
@@ -1568,6 +1648,13 @@ window.addEventListener("keydown", (event) => {
   if (gameState.scene === "menu") {
     if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
       handleMenuNavigation(key);
+      event.preventDefault();
+    }
+    return;
+  }
+
+  if (gameState.scene === "encounter") {
+    if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
       event.preventDefault();
     }
     return;
