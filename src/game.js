@@ -326,10 +326,12 @@ function traceRoundedRectPath(x, y, width, height, radius) {
 }
 
 function drawCreatureSprite(creature, x, y, width, height, options = {}) {
-  const { flip = false, frameColor = creature.color, padding = 10, radius = 24 } = options;
+  const { flip = false, frameColor = creature.color, padding = 10, radius = 24 , border = true} = options;
   const spriteRecord = ensureCreatureSprite(creature.species || creature.name);
 
-  drawRoundedRect(x, y, width, height, radius, frameColor, "#ffffff");
+  if(border) {
+    drawRoundedRect(x, y, width, height, radius, frameColor, "#ffffff");
+  }
 
   if (!spriteRecord.ready) {
     drawRoundedRect(
@@ -1300,7 +1302,8 @@ function drawBattle() {
   drawCreatureSprite(battle.enemy, 664, 124, 118, 132, {
     frameColor: battle.enemy.color,
     padding: 8,
-    radius: 30
+    radius: 30,
+    border: false
   });
 
   ctx.fillStyle = activeCreature.color;
@@ -1311,7 +1314,8 @@ function drawBattle() {
     flip: true,
     frameColor: activeCreature.color,
     padding: 10,
-    radius: 34
+    radius: 34,
+    border: false
   });
 
   drawRoundedRect(38, 360, 884, 178, 20, "rgba(255, 251, 245, 0.97)", "#3d271d");
