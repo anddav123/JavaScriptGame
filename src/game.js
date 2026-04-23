@@ -1370,20 +1370,20 @@ function drawBattle() {
   ctx.fillStyle = background;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  drawRoundedRect(54, 64, 280, 120, 20, "rgba(255, 249, 241, 0.95)", "#3d271d");
-  drawRoundedRect(626, 330, 280, 120, 20, "rgba(255, 249, 241, 0.95)", "#3d271d");
-  drawText(battle.enemy.name, 78, 98, { font: "14px 'Press Start 2P'" });
-  drawText(activeCreature.nickname, 650, 364, { font: "14px 'Press Start 2P'" });
-  drawHpBar(78, 118, 220, battle.enemy.hp, battle.enemy.maxHp, "#d96459");
-  drawHpBar(650, 384, 220, activeCreature.hp, activeCreature.maxHp, "#2a9d8f");
-  drawText(`${battle.enemy.hp}/${battle.enemy.maxHp}`, 78, 154, { font: "16px Outfit" });
-  drawText(`${activeCreature.hp}/${activeCreature.maxHp}`, 650, 420, { font: "16px Outfit" });
+  drawRoundedRect(54, 14, 280, 120, 20, "rgba(255, 249, 241, 0.95)", "#3d271d");
+  drawRoundedRect(626, 230, 280, 120, 20, "rgba(255, 249, 241, 0.95)", "#3d271d");
+  drawText(battle.enemy.name, 78, 48, { font: "14px 'Press Start 2P'" });
+  drawText(activeCreature.nickname, 650, 264, { font: "14px 'Press Start 2P'" });
+  drawHpBar(78, 68, 220, battle.enemy.hp, battle.enemy.maxHp, "#d96459");
+  drawHpBar(650, 284, 220, activeCreature.hp, activeCreature.maxHp, "#2a9d8f");
+  drawText(`${battle.enemy.hp}/${battle.enemy.maxHp}`, 78, 104, { font: "16px Outfit" });
+  drawText(`${activeCreature.hp}/${activeCreature.maxHp}`, 650, 320, { font: "16px Outfit" });
 
   ctx.fillStyle = battle.enemy.color;
   ctx.beginPath();
-  ctx.ellipse(720, 232, 132, 48, 0, 0, Math.PI * 2);
+  ctx.ellipse(720, 132, 132, 48, 0, 0, Math.PI * 2);
   ctx.fill();
-  drawCreatureSprite(battle.enemy, 664, 124, 118, 132, {
+  drawCreatureSprite(battle.enemy, 664, 24, 118, 132, {
     frameColor: battle.enemy.color,
     padding: 8,
     radius: 30,
@@ -1392,9 +1392,9 @@ function drawBattle() {
 
   ctx.fillStyle = activeCreature.color;
   ctx.beginPath();
-  ctx.ellipse(240, 418, 148, 54, 0, 0, Math.PI * 2);
+  ctx.ellipse(240, 298, 148, 54, 0, 0, Math.PI * 2);
   ctx.fill();
-  drawCreatureSprite(activeCreature, 168, 280, 148, 164, {
+  drawCreatureSprite(activeCreature, 168, 160, 148, 164, {
     flip: true,
     frameColor: activeCreature.color,
     padding: 10,
@@ -1461,8 +1461,8 @@ function drawBattle() {
   drawText(
     battle.turn === "player" ? "Your turn" : `${battle.enemy.name} is acting...`,
     760,
-    394,
-    { font: "14px 'Press Start 2P'", color: "#2a7f62", align: "right" }
+    380,
+    { font: "10px 'Press Start 2P'", color: "#2a7f62", align: "right" }
   );
 }
 
