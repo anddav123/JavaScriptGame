@@ -1,9 +1,11 @@
 import { TILE_SIZE } from "./constants.js";
 import { createBattleController } from "./battle.js";
+import { cutscenes } from "./cutscenes.js";
 import { creatureTemplates } from "./creatures.js";
 import { moveCatalog } from "./moves.js";
 import { createSaveController } from "./save.js";
 import { createSpriteController } from "./sprites.js";
+import { createStoryController } from "./story.js";
 import { createWorldController } from "./world.js";
 
 const canvas = document.getElementById("game");
@@ -55,6 +57,7 @@ const gameState = {
     ]
   },
   battle: null,
+  cutscene: null,
   pointerHotspot: null
 };
 
@@ -116,6 +119,17 @@ const saveController = createSaveController({
   setMessage,
   resetEncounterTransition,
   clamp
+});
+
+const storyController = createStoryController({
+  canvas,
+  ctx,
+  gameState,
+  cutscenes,
+  drawRoundedRect,
+  drawText,
+  wrapText,
+  onComplete: beginNewGame
 });
 
 function createCreatureInstance(species, overrides = {}) {
@@ -200,7 +214,7 @@ function handleStartMenuNavigation(key) {
   } else if (key === "Enter") {
     const selected = options[gameState.startMenu.index];
     if (selected === "Start Adventure") {
-      beginNewGame();
+      storyController.startCutscene("intro");
     } else if (selected === "Load Adventure") {
       saveController.promptToLoadGame();
     } 
@@ -682,6 +696,8 @@ function render() {
 
   if (gameState.scene === "start") {
     drawStartMenu();
+  } else if (gameState.scene === "cutscene") {
+    storyController.drawCutscene();
   } else if (gameState.scene === "encounter") {
     drawEncounterTransition();
   } else if (gameState.scene === "battle") {
@@ -709,6 +725,14 @@ window.addEventListener("keydown", (event) => {
   if (gameState.scene === "start") {
     if (["ArrowUp", "ArrowDown", "w", "s", "Enter"].includes(key)) {
       handleStartMenuNavigation(key);
+      event.preventDefault();
+    }
+    return;
+  }
+
+  if (gameState.scene === "cutscene") {
+    if (key === "Enter") {
+      storyController.advanceCutscene();
       event.preventDefault();
     }
     return;

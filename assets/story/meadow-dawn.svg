@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 576" role="img" aria-labelledby="title desc">
+  <title id="title">Sunmeadow at dawn</title>
+  <desc id="desc">A warm sunrise over a meadow path leading toward distant woods and a cave.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#f8d27a"/>
+      <stop offset="0.46" stop-color="#f0a168"/>
+      <stop offset="1" stop-color="#88c98a"/>
+    </linearGradient>
+    <linearGradient id="grass" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#81c982"/>
+      <stop offset="1" stop-color="#4f9b5f"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+      <stop offset="0" stop-color="#fff7c8"/>
+      <stop offset="1" stop-color="#f6c15f"/>
+    </radialGradient>
+  </defs>
+  <rect width="960" height="576" fill="url(#sky)"/>
+  <circle cx="202" cy="146" r="76" fill="url(#sun)" opacity="0.92"/>
+  <path d="M0 306 C130 246 254 255 384 316 C518 378 676 358 960 292 L960 576 L0 576 Z" fill="url(#grass)"/>
+  <path d="M0 372 C136 312 284 318 426 368 C582 422 732 405 960 342 L960 576 L0 576 Z" fill="#3f874f" opacity="0.62"/>
+  <path d="M410 576 C456 456 494 390 546 340 C592 396 630 468 690 576 Z" fill="#e8c096"/>
+  <path d="M462 576 C492 480 520 418 548 370 C586 428 616 496 648 576 Z" fill="#d9a875" opacity="0.74"/>
+  <path d="M654 238 C694 174 744 144 802 136 C858 128 902 160 944 220 L944 316 C834 285 740 270 654 292 Z" fill="#536352"/>
+  <path d="M714 240 C742 194 780 172 820 172 C864 172 898 199 924 246 L924 296 C846 274 778 268 714 282 Z" fill="#2c2a2b"/>
+  <path d="M0 298 C88 252 166 230 254 232 C218 262 184 294 160 332 C108 316 56 305 0 298 Z" fill="#4f6d4b"/>
+  <path d="M960 276 C882 244 804 231 728 238 C772 264 812 298 842 340 C886 316 926 294 960 276 Z" fill="#55764f"/>
+  <g fill="#2f7f49" opacity="0.75">
+    <path d="M100 482 l10 -48 l10 48 Z"/>
+    <path d="M148 458 l8 -38 l10 38 Z"/>
+    <path d="M782 476 l12 -54 l12 54 Z"/>
+    <path d="M832 454 l10 -42 l10 42 Z"/>
+    <path d="M260 520 l10 -46 l12 46 Z"/>
+    <path d="M322 498 l8 -36 l10 36 Z"/>
+  </g>
+</svg>

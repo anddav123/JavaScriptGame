@@ -22,6 +22,7 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 ## Controls
 
 - Start menu navigation: `W` / `S` or arrow keys, confirm with `Enter`
+- Story dialogue: `Enter`
 - Move: `WASD` or arrow keys
 - Open trainer menu: `Enter`
 - Toggle fullscreen: `F` or the fullscreen button
@@ -34,15 +35,19 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 
 - `index.html`: app shell and canvas mount
 - `style.css`: page styling and game shell UI
+- `assets/player-sprite.png`: 48px-frame player sprite sheet, with `assets/player-sprite.svg` as fallback
 - `src/game.js`: game state, rendering, and input coordination
 - `src/constants.js`: shared sprite, save, and tile constants
+- `src/cutscenes.js`: story scene data and dialogue steps
 - `src/moves.js`: move definitions
 - `src/creatures.js`: creature and enemy definitions
 - `src/battle.js`: encounter setup, combat actions, battle navigation, and battle rendering
 - `src/save.js`: save serialization, export, import, and load prompts
 - `src/sprites.js`: player and creature sprite loading, caching, fallback drawing, and sprite rendering
+- `src/story.js`: cutscene state, image loading, dialogue advancement, and cutscene rendering
 - `src/world.js`: current map queries, camera movement, triggers, signs, and player movement
 - `src/maps.js`: map terrain, signs, triggers, and encounter settings
+- `assets/story/`: story and cutscene artwork, with PNG images and SVG fallbacks
 
 ## Map Notes
 

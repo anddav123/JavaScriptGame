@@ -137,6 +137,7 @@ export function createSaveController({
     gameState.menu.partyIndex = activeIndex;
     gameState.startMenu.index = 0;
     gameState.battle = null;
+    gameState.cutscene = null;
     gameState.pointerHotspot = null;
     resetEncounterTransition();
     updateCamera();

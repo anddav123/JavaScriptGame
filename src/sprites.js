@@ -1,6 +1,8 @@
 import {
   CREATURE_SPRITE_SIZE,
   PLAYER_FACING_ROWS,
+  PLAYER_SPRITE_FALLBACK_FRAME_SIZE,
+  PLAYER_SPRITE_FALLBACK_PATH,
   PLAYER_SPRITE_FRAME_SIZE,
   PLAYER_SPRITE_PATH,
   TILE_SIZE
@@ -13,17 +15,40 @@ export function createSpriteController({
   drawRoundedRect,
   traceRoundedRectPath
 }) {
-  let playerSpriteReady = false;
+  const playerSpriteRecord = {
+    image: new Image(),
+    frameSize: PLAYER_SPRITE_FRAME_SIZE,
+    ready: false
+  };
   const creatureSpriteRegistry = {};
 
-  const playerSprite = new Image();
-  playerSprite.src = PLAYER_SPRITE_PATH;
-  playerSprite.addEventListener("load", () => {
-    playerSpriteReady = true;
+  const playerSpriteSources = [
+    { src: PLAYER_SPRITE_PATH, frameSize: PLAYER_SPRITE_FRAME_SIZE },
+    { src: PLAYER_SPRITE_FALLBACK_PATH, frameSize: PLAYER_SPRITE_FALLBACK_FRAME_SIZE }
+  ].filter((source) => source.src);
+  let playerSpriteSourceIndex = 0;
+
+  function loadNextPlayerSprite() {
+    const nextSource = playerSpriteSources[playerSpriteSourceIndex];
+    if (!nextSource) {
+      playerSpriteRecord.ready = false;
+      return;
+    }
+
+    playerSpriteRecord.ready = false;
+    playerSpriteRecord.frameSize = nextSource.frameSize;
+    playerSpriteRecord.image.src = nextSource.src;
+  }
+
+  playerSpriteRecord.image.addEventListener("load", () => {
+    playerSpriteRecord.ready = true;
   });
-  playerSprite.addEventListener("error", () => {
-    playerSpriteReady = false;
+  playerSpriteRecord.image.addEventListener("error", () => {
+    playerSpriteSourceIndex += 1;
+    loadNextPlayerSprite();
   });
+
+  loadNextPlayerSprite();
 
   function ensureCreatureSprite(species) {
     if (creatureSpriteRegistry[species]) return creatureSpriteRegistry[species];
@@ -117,11 +142,13 @@ export function createSpriteController({
   }
 
   function drawPlayer(player, x, y) {
+    const playerSprite = playerSpriteRecord.image;
+    const frameSize = playerSpriteRecord.frameSize;
     const isSpriteUsable =
-      playerSpriteReady &&
+      playerSpriteRecord.ready &&
       playerSprite.complete &&
-      playerSprite.naturalWidth >= PLAYER_SPRITE_FRAME_SIZE * 3 &&
-      playerSprite.naturalHeight >= PLAYER_SPRITE_FRAME_SIZE * 4;
+      playerSprite.naturalWidth >= frameSize * 3 &&
+      playerSprite.naturalHeight >= frameSize * 4;
 
     if (!isSpriteUsable) {
       drawRoundedRect(x + 8, y + 5, 32, 38, 14, "#ffffff", getActiveCreature().color);
@@ -138,10 +165,10 @@ export function createSpriteController({
     ctx.imageSmoothingEnabled = false;
     ctx.drawImage(
       playerSprite,
-      frameColumn * PLAYER_SPRITE_FRAME_SIZE,
-      facingRow * PLAYER_SPRITE_FRAME_SIZE,
-      PLAYER_SPRITE_FRAME_SIZE,
-      PLAYER_SPRITE_FRAME_SIZE,
+      frameColumn * frameSize,
+      facingRow * frameSize,
+      frameSize,
+      frameSize,
       x,
       y,
       TILE_SIZE,
