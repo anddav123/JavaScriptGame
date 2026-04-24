@@ -11,7 +11,13 @@ A lightweight JavaScript browser RPG prototype with:
 
 ## Run it
 
-Open `index.html` in a browser, or serve the folder with any simple static server.
+Serve the folder with any simple static server, then open the local URL in a browser.
+
+```bash
+npx serve .
+```
+
+Opening `index.html` directly may fail in some browsers because the game uses JavaScript modules.
 
 ## Controls
 
@@ -28,11 +34,16 @@ Open `index.html` in a browser, or serve the folder with any simple static serve
 
 - `index.html`: app shell and canvas mount
 - `style.css`: page styling and game shell UI
-- `src/game.js`: world logic, battle loop, rendering, and input
+- `src/game.js`: game state, world logic, battle loop, rendering, and input
+- `src/constants.js`: shared sprite, save, and tile constants
+- `src/moves.js`: move definitions
+- `src/creatures.js`: creature and enemy definitions
+- `src/battle.js`: encounter setup, combat actions, battle navigation, and battle rendering
+- `src/maps.js`: map terrain, signs, triggers, and encounter settings
 
 ## Map Notes
 
-- Maps live in the `worldMaps` object in `src/game.js`
+- Maps live in the `worldMaps` object in `src/maps.js`
 - Each map has `terrain`, `signs`, `triggers`, a `name`, and an `encounterRate`
 - `triggers` let you move between maps by stepping on door or cave tiles
 - The camera follows the player automatically, so maps can now be larger than the canvas

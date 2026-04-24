@@ -1,21 +1,23 @@
+import {
+  CREATURE_SPRITE_SIZE,
+  PLAYER_FACING_ROWS,
+  PLAYER_SPRITE_FRAME_SIZE,
+  PLAYER_SPRITE_PATH,
+  SAVE_VERSION,
+  TILE_SIZE
+} from "./constants.js";
+import { createBattleController } from "./battle.js";
+import { creatureTemplates } from "./creatures.js";
+import { worldMaps } from "./maps.js";
+import { moveCatalog } from "./moves.js";
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const canvasFrame = document.getElementById("canvas-frame");
 const fullscreenToggle = document.getElementById("fullscreen-toggle");
 
-const TILE_SIZE = 48;
 const VIEW_COLS = Math.floor(canvas.width / TILE_SIZE);
 const VIEW_ROWS = Math.floor(canvas.height / TILE_SIZE);
-const PLAYER_SPRITE_PATH = "assets/player-sprite.svg";
-const PLAYER_SPRITE_FRAME_SIZE = 16;
-const CREATURE_SPRITE_SIZE = 96;
-const SAVE_VERSION = 1;
-const PLAYER_FACING_ROWS = {
-  down: 0,
-  left: 1,
-  right: 2,
-  up: 3
-};
 
 const keys = new Set();
 let mouse = { x: 0, y: 0 };
@@ -30,192 +32,6 @@ playerSprite.addEventListener("load", () => {
 playerSprite.addEventListener("error", () => {
   playerSpriteReady = false;
 });
-
-const moveCatalog = {
-  ember: { name: "Ember", power: 16, accuracy: 0.92, color: "#ef6c3e" },
-  vineSnap: { name: "Vine Snap", power: 14, accuracy: 0.95, color: "#2d8f64" },
-  iceShard: { name: "Ice Shard", power: 25, accuracy: 0.5, color: "#9af0f0" },
-  focus: { name: "Focus", power: 0, accuracy: 1, color: "#6c5ce7", buff: 5 },
-  tonic: { name: "Tonic", power: 0, accuracy: 1, color: "#2a9d8f", heal: 16 }
-};
-
-const creatureTemplates = {
-  Roselle: {
-    species: "Roselle",
-    nickname: "Roselle",
-    color: "#fc8ccd",
-    spritePath: "assets/creatures/pyrel-sprite.png",
-    fallbackSpritePath: "assets/creatures/pyrel-sprite.svg",
-    role: "Starter",
-    maxHp: 58,
-    moves: ["ember", "vineSnap", "focus", "tonic"],
-    description: "A warm-hearted ember fox that leads the party into danger."
-  },
-  Folio: {
-    species: "Folio",
-    nickname: "Folio",
-    color: "#4d9a63",
-    spritePath: "assets/creatures/mossling-sprite.png",
-    fallbackSpritePath: "assets/creatures/mossling-sprite.svg",
-    role: "Wildling",
-    maxHp: 42,
-    moves: ["vineSnap", "focus"],
-    description: "A shy meadow creature that hides in moss and strikes with vines."
-  },
-  Scorcha: {
-    species: "Scorcha",
-    nickname: "Scorcha",
-    color: "#d15b38",
-    spritePath: "assets/creatures/cindercub-sprite.png",
-    fallbackSpritePath: "assets/creatures/cindercub-sprite.svg",
-    role: "Wildling",
-    maxHp: 40,
-    moves: ["ember", "focus"],
-    description: "A fierce cub whose paws glow after every sprint."
-  },
-  Ripplefin: {
-    species: "Ripplefin",
-    nickname: "Ripplefin",
-    color: "#4d77b4",
-    spritePath: "assets/creatures/ripplefin-sprite.png",
-    fallbackSpritePath: "assets/creatures/ripplefin-sprite.svg",
-    role: "Wildling",
-    maxHp: 44,
-    moves: ["vineSnap", "tonic", "iceShard"],
-    description: "A calm river spirit that mends itself between attacks."
-  }
-};
-
-const enemyTemplates = Object.values(creatureTemplates)
-  .filter((creature) => creature.species !== "Roselle")
-  .map((creature) => ({
-    name: creature.species,
-    color: creature.color,
-    spritePath: creature.spritePath,
-    maxHp: creature.maxHp,
-    moves: creature.moves
-  }));
-
-const worldMaps = {
-  sunmeadow: {
-    name: "Sunmeadow",
-    palette: { top: "#78c98b", bottom: "#5ea96f" },
-    encounterRate: 0.085,
-    terrain: [
-      "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-      "WRRGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WRRTTTTGGGGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTTTTWWGGGGGGGGGGW",
-      "WRRTTTTGGGWWGGGGGGGGGGTTTTGGGGGWWWWWWWWWWWWWRRRWWWWWWWWWWWWWWWWWWWWWWWWW",
-      "WRRGGGGGGGWWGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WRRRRRGGGGGGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WRRRRRGGGTTTTGGGGGGGGGTTTTGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
-      "WGGGGGGGGTTTTGGGGGGGGGTTTTGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
-      "WGGGGTTTGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTTRRRRRRTTTTTTTTTTTTTTTTTTTTW",
-      "WGGGGTTTGGGGGGGGGGGGGGGGRRGGGGGWTTTTTTTTTTTTTRRRRRRTTTTTTTTTTTTTTTTTTTTW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGWTTTTTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWWWWWWWWWWWWWWWWWRRRWWWWWWWWWWWWWWWWWWWWW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
-      "WGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
-      "WGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
-      "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
-    ],
-    signs: [
-      { x: 5, y: 5, text: "Tall grass is alive with ember spirits." },
-      { x: 21, y: 11, text: "Trainer tip: press Enter to open your trainer menu." },
-      { x: 25, y: 4, text: "A cave mouth waits to the east. Stay alert." },
-      { x: 47, y: 14, text: "Welcome to New Town." }
-    ],
-    triggers: [
-      {
-        x: 27,
-        y: 5,
-        kind: "cave",
-        targetMap: "emberCave",
-        targetX: 3,
-        targetY: 12,
-        message: "You step into Ember Cave."
-      },
-      {
-        x: 23,
-        y: 12,
-        kind: "door",
-        targetMap: "wayfarerHouse",
-        targetX: 4,
-        targetY: 6,
-        message: "You enter the wayfarer's cottage."
-      }
-    ]
-  },
-  emberCave: {
-    name: "Ember Cave",
-    palette: { top: "#635166", bottom: "#362933" },
-    encounterRate: 0.14,
-    terrain: [
-      "WWWWWWWWWWWWWWWWWWWWWWWW",
-      "WWGGGGGGGGGGGGGGGGGGGGWW",
-      "WGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGGGGWWWWWGGGGGGGGGGGW",
-      "WGGGGGGWGGGWGGGGGGGGGGGW",
-      "WGGGTTTWGGGWGGGGTTTGGGGW",
-      "WGGGTTTWGGGWGGGGTTTGGGGW",
-      "WGGGGGGWGGGWGGGGGGGGGGGW",
-      "WGGGGGGWGGGWGGGGGGGGGGGW",
-      "WGGGGGGWWWWWGGGGGGGGGGGW",
-      "WGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGGGGGGGGGGGGGGGGGGGGW",
-      "WGGGGGGGGGGGGGGGGGGGGGGW",
-      "WWGGGGGGGGGGGGGGGGGGGGWW",
-      "WWWWWWWWWWWWWWWWWWWWWWWW"
-    ],
-    signs: [
-      { x: 8, y: 10, text: "The cave walls shimmer with trapped warmth." }
-    ],
-    triggers: [
-      {
-        x: 2,
-        y: 13,
-        kind: "cave-exit",
-        targetMap: "sunmeadow",
-        targetX: 27,
-        targetY: 6,
-        message: "You emerge back into Sunmeadow."
-      }
-    ]
-  },
-  wayfarerHouse: {
-    name: "Wayfarer Cottage",
-    palette: { top: "#000000", bottom: "#020202" },
-    encounterRate: -1,
-    terrain: [
-      "WWWWWWWWWW",
-      "WRRRRRRRRW",
-      "WRRRRRRRRW",
-      "WRRRRRRRRW",
-      "WRRRRRRRRW",
-      "WRRRRRRRRW",
-      "WRRRRRRRRW",
-      "WWWWWWWWWW"
-    ],
-    signs: [
-      { x: 5, y: 2, text: "A note reads: rest, explore, and return stronger." }
-    ],
-    triggers: [
-      {
-        x: 4,
-        y: 6,
-        kind: "door-exit",
-        targetMap: "sunmeadow",
-        targetX: 23,
-        targetY: 13,
-        message: "You step back outside."
-      }
-    ]
-  }
-};
 
 const gameState = {
   scene: "start",
@@ -257,6 +73,23 @@ const gameState = {
   battle: null,
   pointerHotspot: null
 };
+
+const battleController = createBattleController({
+  canvas,
+  ctx,
+  gameState,
+  getMouse: () => mouse,
+  getActiveCreature,
+  createCreatureInstance,
+  currentMap,
+  setMessage,
+  clamp,
+  clearKeys: () => keys.clear(),
+  drawRoundedRect,
+  drawText,
+  drawHpBar,
+  drawCreatureSprite
+});
 
 function createCreatureInstance(species, overrides = {}) {
   const template = creatureTemplates[species];
@@ -647,72 +480,6 @@ function closeMenu() {
   //setMessage("Back to exploring.");
 }
 
-function captureCreature(species) {
-
-  //if already owned do we want to catch again?
-  //const alreadyOwned = gameState.player.party.some((creature) => creature.species === species);
-  //if (alreadyOwned) return false;
-
-  const capturedCreature = createCreatureInstance(species, {
-    nickname: species,
-    role: "Captured",
-    captured: true
-  });
-  gameState.player.party.push(capturedCreature);
-  setMessage(`${species} joined your party. Press Enter to view Party.`);
-  return true;
-}
-
-function attemptCatch() {
-  const battle = gameState.battle;
-  if (!battle) return false;
-
-  if (gameState.player.orbs <= 0) {
-    writeBattleLog("No capture orbs left.");
-    return false;
-  }
-
-  gameState.player.orbs -= 1;
-  const enemy = battle.enemy;
-  const alreadyOwned = gameState.player.party.some((creature) => creature.species === enemy.name);
-  const healthRatio = enemy.hp / enemy.maxHp;
-  const catchChance = clamp(0.2 + (1 - healthRatio) * 0.65 + (alreadyOwned ? -0.08 : 0.05), 0.12, 0.92);
-
-  writeBattleLog(`You threw an capture orb at ${enemy.name}.`);
-
-  if (Math.random() <= catchChance) {
-    captureCreature(enemy.name);
-    writeBattleLog(`${enemy.name} was captured.`);
-    gameState.scene = "world";
-    gameState.battle = null;
-    return true;
-  }
-
-  writeBattleLog(`${enemy.name} broke free.`);
-  return false;
-}
-
-function beginEncounter() {
-  const template = enemyTemplates[Math.floor(Math.random() * enemyTemplates.length)];
-  keys.clear();
-  getActiveCreature().attackBoost = 0;
-  gameState.battle = {
-    enemy: {
-      ...template,
-      hp: template.maxHp,
-      attackBoost: 0
-    },
-    turn: "player",
-    log: [`A wild ${template.name} appeared!`],
-    buttons: [],
-    selectionIndex: 0
-  };
-  gameState.scene = "encounter";
-  gameState.encounterTransition.active = true;
-  gameState.encounterTransition.startedAt = performance.now();
-  gameState.encounterTransition.enemyName = template.name;
-}
-
 function enterTrigger(trigger) {
   gameState.world.currentMapId = trigger.targetMap;
   gameState.player.x = trigger.targetX;
@@ -760,228 +527,10 @@ function movePlayer(dx, dy) {
   }
 
   if (tileAt(targetX, targetY) === "T" && Math.random() < currentMap().encounterRate) {
-    beginEncounter();
+    battleController.beginEncounter();
     return;
   }
 
-}
-
-function randomMoveId(moves) {
-  return moves[Math.floor(Math.random() * moves.length)];
-}
-
-function writeBattleLog(text) {
-  gameState.battle.log.unshift(text);
-  gameState.battle.log = gameState.battle.log.slice(0, 5);
-}
-
-function applyMove(attacker, defender, moveId, owner) {
-  const move = moveCatalog[moveId];
-  if (Math.random() > move.accuracy) {
-    writeBattleLog(`${attacker.nickname || attacker.name}'s ${move.name} missed.`);
-    return;
-  }
-
-  if (move.heal) {
-    attacker.hp = clamp(attacker.hp + move.heal, 0, attacker.maxHp);
-    writeBattleLog(`${attacker.nickname || attacker.name} restored ${move.heal} HP with ${move.name}.`);
-    return;
-  }
-
-  if (move.buff) {
-    attacker.attackBoost += move.buff;
-    writeBattleLog(`${attacker.nickname || attacker.name} sharpened focus. Attack rose.`);
-    return;
-  }
-
-  const damage = Math.max(5, move.power + attacker.attackBoost + Math.floor(Math.random() * 5) - 2);
-  defender.hp = clamp(defender.hp - damage, 0, defender.maxHp);
-  writeBattleLog(`${attacker.nickname || attacker.name} used ${move.name} for ${damage} damage.`);
-
-  if (defender.hp === 0) {
-    writeBattleLog(`${defender.nickname || defender.name} was defeated.`);
-    if (owner === "player") {
-      gameState.player.wins += 1;
-    }
-  }
-}
-
-function enemyTurn() {
-  const { enemy } = gameState.battle;
-  const activeCreature = getActiveCreature();
-  if (enemy.hp <= 0 || activeCreature.hp <= 0) {
-    resolveBattleOutcome();
-    return;
-  }
-
-  const moveId = randomMoveId(enemy.moves);
-  applyMove(enemy, activeCreature, moveId, "enemy");
-
-  if (activeCreature.hp <= 0) {
-    resolveBattleOutcome();
-    return;
-  }
-
-  gameState.battle.turn = "player";
-}
-
-function resolveBattleOutcome() {
-  const battle = gameState.battle;
-  const activeCreature = getActiveCreature();
-
-  if (battle.enemy.hp <= 0) {
-    setMessage(`${activeCreature.nickname} won in ${currentMap().name}. Total victories: ${gameState.player.wins}.`);
-  } else if (activeCreature.hp <= 0) {
-    activeCreature.hp = activeCreature.maxHp;
-    setMessage(`${activeCreature.nickname} fainted, then recovered back at camp.`);
-  }
-
-  setTimeout(() => {
-    gameState.scene = "world";
-    gameState.battle = null;
-  }, 1100);
-}
-
-function playerAction(action) {
-  const battle = gameState.battle;
-  const activeCreature = getActiveCreature();
-  if (!battle || battle.turn !== "player") return;
-
-  if (action.type === "move") {
-    applyMove(activeCreature, battle.enemy, action.moveId, "player");
-  } else if (action.type === "heal") {
-    if (gameState.player.potions <= 0) {
-      writeBattleLog("No tonics left.");
-      return;
-    }
-    gameState.player.potions -= 1;
-    activeCreature.hp = clamp(activeCreature.hp + 20, 0, activeCreature.maxHp);
-    writeBattleLog(`${activeCreature.nickname} used a field tonic.`);
-  } else if (action.type === "catch") {
-    if (attemptCatch()) {
-      return;
-    }
-  } else if (action.type === "run") {
-    if (Math.random() < 0.65) {
-      setMessage("You escaped safely.");
-      gameState.scene = "world";
-      gameState.battle = null;
-      return;
-    }
-    writeBattleLog("Couldn't escape!");
-  }
-
-  if (battle.enemy.hp <= 0 || activeCreature.hp <= 0) {
-    resolveBattleOutcome();
-    return;
-  }
-
-  battle.turn = "enemy";
-  setTimeout(enemyTurn, 600);
-}
-
-function battleMoveCount() {
-  return getActiveCreature().moves.length;
-}
-
-function battleMoveRowCount() {
-  return Math.ceil(battleMoveCount() / 2);
-}
-
-function battleSubmenuStartIndex() {
-  return battleMoveCount();
-}
-
-function moveSelectionIndex(direction) {
-  const battle = gameState.battle;
-  if (!battle || battle.buttons.length === 0) return 0;
-
-  const currentIndex = clamp(battle.selectionIndex ?? 0, 0, battle.buttons.length - 1);
-  const moveCount = battleMoveCount();
-  const submenuStart = battleSubmenuStartIndex();
-
-  if (currentIndex >= submenuStart) {
-    const submenuIndex = currentIndex - submenuStart;
-
-    if (direction === "left") {
-      return submenuStart + Math.max(0, submenuIndex - 1);
-    }
-
-    if (direction === "right") {
-      return submenuStart + Math.min(2, submenuIndex + 1);
-    }
-
-    if (direction === "up") {
-      return Math.min(moveCount - 1, 2);
-    }
-
-    return currentIndex;
-  }
-
-  const row = Math.floor(currentIndex / 2);
-  const col = currentIndex % 2;
-  const lastMoveIndex = moveCount - 1;
-  const lastRow = battleMoveRowCount() - 1;
-
-  if (direction === "left") {
-    if (col === 1) {
-      return currentIndex - 1;
-    }
-    return currentIndex;
-  }
-
-  if (direction === "right") {
-    if (col === 0 && currentIndex + 1 <= lastMoveIndex) {
-      return currentIndex + 1;
-    }
-    return currentIndex;
-  }
-
-  if (direction === "up") {
-    if (row === 0) {
-      return currentIndex;
-    }
-
-    const targetIndex = currentIndex - 2;
-    if (targetIndex <= lastMoveIndex) {
-      return targetIndex;
-    }
-
-    return lastMoveIndex;
-  }
-
-  if (direction === "down") {
-    const targetIndex = currentIndex + 2;
-
-    if (row < lastRow && targetIndex <= lastMoveIndex) {
-      return targetIndex;
-    }
-
-    return submenuStart + Math.min(col, 2);
-  }
-
-  return currentIndex;
-}
-
-function handleBattleNavigation(key) {
-  const battle = gameState.battle;
-  if (!battle || battle.turn !== "player") return;
-
-  if (battle.buttons.length === 0) {
-    battle.buttons = battleButtons();
-  }
-
-  if (key === "ArrowUp" || key === "w") {
-    battle.selectionIndex = moveSelectionIndex("up");
-  } else if (key === "ArrowDown" || key === "s") {
-    battle.selectionIndex = moveSelectionIndex("down");
-  } else if (key === "ArrowLeft" || key === "a") {
-    battle.selectionIndex = moveSelectionIndex("left");
-  } else if (key === "ArrowRight" || key === "d") {
-    battle.selectionIndex = moveSelectionIndex("right");
-  } else if (key === "Enter") {
-    playerAction(battle.buttons[battle.selectionIndex]);
-  }
 }
 
 function handleWorldInput() {
@@ -1281,7 +830,7 @@ function drawEncounterTransition() {
   const transition = gameState.encounterTransition;
   if (!transition.active) {
     gameState.scene = "battle";
-    drawBattle();
+    battleController.drawBattle();
     return;
   }
 
@@ -1291,7 +840,7 @@ function drawEncounterTransition() {
   const showBattleScene = elapsed >= transition.switchAt;
 
   if (showBattleScene) {
-    drawBattle();
+    battleController.drawBattle();
   } else {
     drawWorld();
   }
@@ -1335,135 +884,6 @@ function drawEncounterTransition() {
     resetEncounterTransition();
     gameState.scene = "battle";
   }
-}
-
-function battleButtons() {
-  const moves = getActiveCreature().moves.map((moveId, index) => {
-    const x = 490 + (index % 2) * 210;
-    const y = 384 + Math.floor(index / 2) * 72;
-    return {
-      type: "move",
-      moveId,
-      x,
-      y,
-      width: 188,
-      height: 56
-    };
-  });
-
-  return [
-    ...moves,
-    { type: "heal", x: 490, y: 528, width: 120, height: 32 },
-    { type: "catch", x: 629, y: 528, width: 120, height: 32 },
-    { type: "run", x: 768, y: 528, width: 120, height: 32 }
-  ];
-}
-
-function drawBattle() {
-  const battle = gameState.battle;
-  const activeCreature = getActiveCreature();
-  if (!battle) return;
-
-  const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-  background.addColorStop(0, "#ffe9c1");
-  background.addColorStop(1, "#f6b26b");
-  ctx.fillStyle = background;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  drawRoundedRect(54, 14, 280, 120, 20, "rgba(255, 249, 241, 0.95)", "#3d271d");
-  drawRoundedRect(626, 230, 280, 120, 20, "rgba(255, 249, 241, 0.95)", "#3d271d");
-  drawText(battle.enemy.name, 78, 48, { font: "14px 'Press Start 2P'" });
-  drawText(activeCreature.nickname, 650, 264, { font: "14px 'Press Start 2P'" });
-  drawHpBar(78, 68, 220, battle.enemy.hp, battle.enemy.maxHp, "#d96459");
-  drawHpBar(650, 284, 220, activeCreature.hp, activeCreature.maxHp, "#2a9d8f");
-  drawText(`${battle.enemy.hp}/${battle.enemy.maxHp}`, 78, 104, { font: "16px Outfit" });
-  drawText(`${activeCreature.hp}/${activeCreature.maxHp}`, 650, 320, { font: "16px Outfit" });
-
-  ctx.fillStyle = battle.enemy.color;
-  ctx.beginPath();
-  ctx.ellipse(720, 132, 132, 48, 0, 0, Math.PI * 2);
-  ctx.fill();
-  drawCreatureSprite(battle.enemy, 664, 24, 118, 132, {
-    frameColor: battle.enemy.color,
-    padding: 8,
-    radius: 30,
-    border: false
-  });
-
-  ctx.fillStyle = activeCreature.color;
-  ctx.beginPath();
-  ctx.ellipse(240, 298, 148, 54, 0, 0, Math.PI * 2);
-  ctx.fill();
-  drawCreatureSprite(activeCreature, 168, 160, 148, 164, {
-    flip: true,
-    frameColor: activeCreature.color,
-    padding: 10,
-    radius: 34,
-    border: false
-  });
-
-  drawRoundedRect(38, 360, 884, 178, 20, "rgba(255, 251, 245, 0.97)", "#3d271d");
-  drawText("Battle Log", 62, 394, { font: "14px 'Press Start 2P'", color: "#b93c2f" });
-
-  ctx.font = "18px Outfit";
-  ctx.fillStyle = "#694435";
-  battle.log.forEach((line, index) => {
-    ctx.fillText(line, 62, 426 + index * 26);
-  });
-
-  const buttons = battleButtons();
-  battle.buttons = buttons;
-  battle.selectionIndex = clamp(battle.selectionIndex ?? 0, 0, buttons.length - 1);
-  gameState.pointerHotspot = null;
-
-  buttons.forEach((button, index) => {
-    const move = button.moveId ? moveCatalog[button.moveId] : null;
-    const isHovered = mouse.x >= button.x && mouse.x <= button.x + button.width
-      && mouse.y >= button.y && mouse.y <= button.y + button.height;
-    const isSelected = index === battle.selectionIndex;
-
-    const fill = button.type === "move"
-      ? move.color
-      : button.type === "heal"
-        ? "#2a9d8f"
-        : button.type === "catch"
-          ? "#9c6644"
-          : "#7f5539";
-
-    drawRoundedRect(
-      button.x,
-      button.y,
-      button.width,
-      button.height,
-      14,
-      fill,
-      isHovered || isSelected ? "#dbcd0e" : "#3d271d"
-    );
-    drawText(
-      button.type === "move"
-        ? move.name
-        : button.type === "heal"
-          ? `Tonic x${gameState.player.potions}`
-          : button.type === "catch"
-            ? `Catch x${gameState.player.orbs}`
-            : "Run",
-      button.x + 16,
-      button.y + (button.height > 40 ? 33 : 22),
-      { font: button.height > 40 ? "14px 'Press Start 2P'" : "12px 'Press Start 2P'", color: "#fff8f0" }
-    );
-
-    if (isHovered) {
-      gameState.pointerHotspot = button;
-      battle.selectionIndex = index;
-    }
-  });
-
-  drawText(
-    battle.turn === "player" ? "Your turn" : `${battle.enemy.name} is acting...`,
-    760,
-    380,
-    { font: "10px 'Press Start 2P'", color: "#2a7f62", align: "right" }
-  );
 }
 
 function drawMenuOverlay() {
@@ -1610,7 +1030,7 @@ function render() {
   } else if (gameState.scene === "encounter") {
     drawEncounterTransition();
   } else if (gameState.scene === "battle") {
-    drawBattle();
+    battleController.drawBattle();
   } else {
     drawWorld();
     if (gameState.scene === "menu") {
@@ -1662,7 +1082,7 @@ window.addEventListener("keydown", (event) => {
 
   if (gameState.scene === "battle") {
     if (movementKeys.includes(key) || key === "Enter") {
-      handleBattleNavigation(key);
+      battleController.handleBattleNavigation(key);
       event.preventDefault();
     }
     return;
@@ -1700,7 +1120,7 @@ canvas.addEventListener("click", () => {
     return;
   }
 
-  playerAction(gameState.pointerHotspot);
+  battleController.playerAction(gameState.pointerHotspot);
 });
 
 fullscreenToggle.addEventListener("click", () => {
