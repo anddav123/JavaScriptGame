@@ -1,15 +1,10 @@
-import {
-  CREATURE_SPRITE_SIZE,
-  PLAYER_FACING_ROWS,
-  PLAYER_SPRITE_FRAME_SIZE,
-  PLAYER_SPRITE_PATH,
-  SAVE_VERSION,
-  TILE_SIZE
-} from "./constants.js";
+import { TILE_SIZE } from "./constants.js";
 import { createBattleController } from "./battle.js";
 import { creatureTemplates } from "./creatures.js";
-import { worldMaps } from "./maps.js";
 import { moveCatalog } from "./moves.js";
+import { createSaveController } from "./save.js";
+import { createSpriteController } from "./sprites.js";
+import { createWorldController } from "./world.js";
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -21,17 +16,6 @@ const VIEW_ROWS = Math.floor(canvas.height / TILE_SIZE);
 
 const keys = new Set();
 let mouse = { x: 0, y: 0 };
-let playerSpriteReady = false;
-const creatureSpriteRegistry = {};
-
-const playerSprite = new Image();
-playerSprite.src = PLAYER_SPRITE_PATH;
-playerSprite.addEventListener("load", () => {
-  playerSpriteReady = true;
-});
-playerSprite.addEventListener("error", () => {
-  playerSpriteReady = false;
-});
 
 const gameState = {
   scene: "start",
@@ -74,6 +58,38 @@ const gameState = {
   pointerHotspot: null
 };
 
+const worldController = createWorldController({
+  canvas,
+  gameState,
+  setMessage,
+  clamp,
+  onEncounter: () => battleController.beginEncounter()
+});
+
+const {
+  currentMap,
+  currentMapCols,
+  currentMapRows,
+  isWalkable,
+  movePlayer,
+  tileAt,
+  updateCamera,
+  worldToScreenX,
+  worldToScreenY
+} = worldController;
+
+const spriteController = createSpriteController({
+  ctx,
+  getActiveCreature,
+  drawRoundedRect,
+  traceRoundedRectPath
+});
+
+const {
+  drawCreatureSprite,
+  drawPlayer
+} = spriteController;
+
 const battleController = createBattleController({
   canvas,
   ctx,
@@ -89,6 +105,17 @@ const battleController = createBattleController({
   drawText,
   drawHpBar,
   drawCreatureSprite
+});
+
+const saveController = createSaveController({
+  gameState,
+  createCreatureInstance,
+  currentMap,
+  isWalkable,
+  updateCamera,
+  setMessage,
+  resetEncounterTransition,
+  clamp
 });
 
 function createCreatureInstance(species, overrides = {}) {
@@ -112,48 +139,6 @@ function getActiveCreature() {
   return gameState.player.party[gameState.player.activeIndex];
 }
 
-function ensureCreatureSprite(species) {
-  if (creatureSpriteRegistry[species]) return creatureSpriteRegistry[species];
-
-  const template = creatureTemplates[species];
-  if (!template?.spritePath) {
-    creatureSpriteRegistry[species] = { image: null, ready: false };
-    return creatureSpriteRegistry[species];
-  }
-
-  const image = new Image();
-  const spriteSources = [template.spritePath, template.fallbackSpritePath].filter(Boolean);
-  const spriteRecord = {
-    image,
-    ready: false,
-    usesPixelArtScaling: false
-  };
-  let sourceIndex = 0;
-
-  function loadNextSource() {
-    const nextSource = spriteSources[sourceIndex];
-    if (!nextSource) {
-      spriteRecord.ready = false;
-      return;
-    }
-
-    image.src = nextSource;
-  }
-
-  image.addEventListener("load", () => {
-    spriteRecord.ready = true;
-    spriteRecord.usesPixelArtScaling = image.src.toLowerCase().endsWith(".svg");
-  });
-  image.addEventListener("error", () => {
-    sourceIndex += 1;
-    loadNextSource();
-  });
-
-  loadNextSource();
-  creatureSpriteRegistry[species] = spriteRecord;
-  return spriteRecord;
-}
-
 function traceRoundedRectPath(x, y, width, height, radius) {
   ctx.beginPath();
   ctx.moveTo(x + radius, y);
@@ -162,55 +147,6 @@ function traceRoundedRectPath(x, y, width, height, radius) {
   ctx.arcTo(x, y + height, x, y, radius);
   ctx.arcTo(x, y, x + width, y, radius);
   ctx.closePath();
-}
-
-function drawCreatureSprite(creature, x, y, width, height, options = {}) {
-  const { flip = false, frameColor = creature.color, padding = 10, radius = 24 , border = true} = options;
-  const spriteRecord = ensureCreatureSprite(creature.species || creature.name);
-
-  if(border) {
-    drawRoundedRect(x, y, width, height, radius, frameColor, "#ffffff");
-  }
-
-  if (!spriteRecord.ready) {
-    drawRoundedRect(
-      x + padding,
-      y + padding,
-      Math.max(18, width - padding * 2),
-      Math.max(18, height - padding * 2),
-      Math.max(10, radius - 8),
-      "rgba(255, 243, 231, 0.88)"
-    );
-    return;
-  }
-
-  const innerX = x + padding;
-  const innerY = y + padding;
-  const innerWidth = width - padding * 2;
-  const innerHeight = height - padding * 2;
-  const sourceWidth = spriteRecord.image.naturalWidth || CREATURE_SPRITE_SIZE;
-  const sourceHeight = spriteRecord.image.naturalHeight || CREATURE_SPRITE_SIZE;
-  const scale = Math.min(innerWidth / sourceWidth, innerHeight / sourceHeight);
-  const drawWidth = sourceWidth * scale;
-  const drawHeight = sourceHeight * scale;
-  const offsetX = innerX + (innerWidth - drawWidth) / 2;
-  const offsetY = innerY + (innerHeight - drawHeight) / 2;
-
-  ctx.save();
-  ctx.imageSmoothingEnabled = !spriteRecord.usesPixelArtScaling;
-  traceRoundedRectPath(innerX, innerY, innerWidth, innerHeight, Math.max(10, radius - 8));
-  ctx.clip();
-
-  if (flip) {
-    ctx.translate(offsetX + drawWidth, offsetY);
-    ctx.scale(-1, 1);
-    ctx.drawImage(spriteRecord.image, 0, 0, drawWidth, drawHeight);
-    ctx.restore();
-    return;
-  }
-
-  ctx.drawImage(spriteRecord.image, offsetX, offsetY, drawWidth, drawHeight);
-  ctx.restore();
 }
 
 function setMessage(text) {
@@ -222,168 +158,6 @@ function resetEncounterTransition() {
   gameState.encounterTransition.active = false;
   gameState.encounterTransition.startedAt = 0;
   gameState.encounterTransition.enemyName = "";
-}
-
-function currentMap() {
-  return worldMaps[gameState.world.currentMapId];
-}
-
-function currentMapCols() {
-  return currentMap().terrain[0].length;
-}
-
-function currentMapRows() {
-  return currentMap().terrain.length;
-}
-
-function isValidMapId(mapId) {
-  return typeof mapId === "string" && Boolean(worldMaps[mapId]);
-}
-
-function normalizeCreatureSave(creature, index) {
-  if (!creature || typeof creature !== "object" || typeof creature.species !== "string" || !creatureTemplates[creature.species]) {
-    throw new Error(`Party member ${index + 1} is invalid.`);
-  }
-
-  const template = creatureTemplates[creature.species];
-  return createCreatureInstance(creature.species, {
-    nickname: typeof creature.nickname === "string" && creature.nickname.trim() ? creature.nickname.trim() : template.nickname,
-    role: typeof creature.role === "string" && creature.role.trim() ? creature.role.trim() : template.role,
-    maxHp: Number.isFinite(creature.maxHp) ? Math.max(1, Math.round(creature.maxHp)) : template.maxHp,
-    hp: Number.isFinite(creature.hp) ? Math.max(0, Math.round(creature.hp)) : template.maxHp,
-    captured: Boolean(creature.captured)
-  });
-}
-
-function serializeGameState() {
-  return {
-    saveVersion: SAVE_VERSION,
-    world: {
-      currentMapId: gameState.world.currentMapId
-    },
-    player: {
-      x: gameState.player.x,
-      y: gameState.player.y,
-      facing: gameState.player.facing,
-      potions: gameState.player.potions,
-      orbs: gameState.player.orbs,
-      wins: gameState.player.wins,
-      activeIndex: gameState.player.activeIndex,
-      party: gameState.player.party.map((creature) => ({
-        species: creature.species,
-        nickname: creature.nickname,
-        role: creature.role,
-        maxHp: creature.maxHp,
-        hp: creature.hp,
-        captured: creature.captured
-      }))
-    }
-  };
-}
-
-async function exportSaveJson() {
-  if (gameState.scene === "battle") {
-    setMessage("Finish the battle before saving.");
-    return false;
-  }
-
-  const saveJson = JSON.stringify(serializeGameState(), null, 2);
-
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(saveJson);
-      setMessage("Save JSON copied to your clipboard.");
-      return true;
-    } catch (error) {
-      // Fall back to a prompt when clipboard permissions are unavailable.
-    }
-  }
-
-  window.prompt("Copy your save JSON:", saveJson);
-  setMessage("Save JSON ready to copy.");
-  return true;
-}
-
-function importSaveJson(saveJson) {
-  let parsedSave;
-  try {
-    parsedSave = JSON.parse(saveJson);
-  } catch (error) {
-    throw new Error("That save data is not valid JSON.");
-  }
-
-  if (!parsedSave || typeof parsedSave !== "object") {
-    throw new Error("Save data must be a JSON object.");
-  }
-
-  if (parsedSave.saveVersion !== SAVE_VERSION) {
-    throw new Error("This save version is not supported.");
-  }
-
-  if (!isValidMapId(parsedSave.world?.currentMapId)) {
-    throw new Error("Save data references an unknown map.");
-  }
-
-  if (!Array.isArray(parsedSave.player?.party) || parsedSave.player.party.length === 0) {
-    throw new Error("Save data must include at least one party member.");
-  }
-
-  const party = parsedSave.player.party.map((creature, index) => normalizeCreatureSave(creature, index));
-  const activeIndex = Number.isInteger(parsedSave.player.activeIndex)
-    ? clamp(parsedSave.player.activeIndex, 0, party.length - 1)
-    : 0;
-  const facing = PLAYER_FACING_ROWS[parsedSave.player.facing] !== undefined ? parsedSave.player.facing : "down";
-  const nextPlayer = {
-    ...gameState.player,
-    x: Number.isInteger(parsedSave.player.x) ? parsedSave.player.x : 1,
-    y: Number.isInteger(parsedSave.player.y) ? parsedSave.player.y : 1,
-    facing,
-    walkFrame: 0,
-    lastMovedAt: 0,
-    potions: Number.isFinite(parsedSave.player.potions) ? Math.max(0, Math.round(parsedSave.player.potions)) : 0,
-    orbs: Number.isFinite(parsedSave.player.orbs) ? Math.max(0, Math.round(parsedSave.player.orbs)) : 0,
-    wins: Number.isFinite(parsedSave.player.wins) ? Math.max(0, Math.round(parsedSave.player.wins)) : 0,
-    activeIndex,
-    party
-  };
-
-  const previousMapId = gameState.world.currentMapId;
-  gameState.world.currentMapId = parsedSave.world.currentMapId;
-  if (!isWalkable(nextPlayer.x, nextPlayer.y)) {
-    gameState.world.currentMapId = previousMapId;
-    throw new Error("Save position is blocked on that map.");
-  }
-
-  gameState.player = nextPlayer;
-  gameState.scene = "world";
-  gameState.menu.mode = "main";
-  gameState.menu.mainIndex = 0;
-  gameState.menu.partyIndex = activeIndex;
-  gameState.startMenu.index = 0;
-  gameState.battle = null;
-  gameState.pointerHotspot = null;
-  resetEncounterTransition();
-  updateCamera();
-  setMessage(`Adventure resumed in ${currentMap().name}.`);
-}
-
-function promptToLoadGame() {
-  const saveJson = window.prompt("Paste your save JSON to resume:");
-  if (saveJson === null) return;
-
-  try {
-    importSaveJson(saveJson);
-  } catch (error) {
-    window.alert(error.message || "Unable to load that save.");
-  }
-}
-
-function worldPixelWidth() {
-  return currentMapCols() * TILE_SIZE;
-}
-
-function worldPixelHeight() {
-  return currentMapRows() * TILE_SIZE;
 }
 
 async function toggleFullscreen() {
@@ -400,38 +174,6 @@ async function toggleFullscreen() {
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
-}
-
-function tileAt(x, y) {
-  if (y < 0 || y >= currentMapRows() || x < 0 || x >= currentMapCols()) return "W";
-  return currentMap().terrain[y][x];
-}
-
-function isWalkable(x, y) {
-  return tileAt(x, y) !== "W";
-}
-
-function getSignAt(x, y) {
-  return currentMap().signs.find((sign) => sign.x === x && sign.y === y);
-}
-
-function getTriggerAt(x, y) {
-  return currentMap().triggers.find((trigger) => trigger.x === x && trigger.y === y);
-}
-
-function worldToScreenX(tileX) {
-  return tileX * TILE_SIZE - gameState.camera.x;
-}
-
-function worldToScreenY(tileY) {
-  return tileY * TILE_SIZE - gameState.camera.y;
-}
-
-function updateCamera() {
-  const targetX = gameState.player.x * TILE_SIZE + TILE_SIZE / 2 - canvas.width / 2;
-  const targetY = gameState.player.y * TILE_SIZE + TILE_SIZE / 2 - canvas.height / 2;
-  gameState.camera.x = clamp(targetX, 0, Math.max(0, worldPixelWidth() - canvas.width));
-  gameState.camera.y = clamp(targetY, 0, Math.max(0, worldPixelHeight() - canvas.height));
 }
 
 function menuOptions() {
@@ -460,7 +202,7 @@ function handleStartMenuNavigation(key) {
     if (selected === "Start Adventure") {
       beginNewGame();
     } else if (selected === "Load Adventure") {
-      promptToLoadGame();
+      saveController.promptToLoadGame();
     } 
   }
 }
@@ -478,59 +220,6 @@ function closeMenu() {
   gameState.scene = "world";
   gameState.menu.mode = "main";
   //setMessage("Back to exploring.");
-}
-
-function enterTrigger(trigger) {
-  gameState.world.currentMapId = trigger.targetMap;
-  gameState.player.x = trigger.targetX;
-  gameState.player.y = trigger.targetY;
-  updateCamera();
-  setMessage(trigger.message);
-}
-
-function movePlayer(dx, dy) {
-  if (gameState.scene !== "world") return;
-  if (dx < 0) {
-    gameState.player.facing = "left";
-  } else if (dx > 0) {
-    gameState.player.facing = "right";
-  } else if (dy < 0) {
-    gameState.player.facing = "up";
-  } else if (dy > 0) {
-    gameState.player.facing = "down";
-  }
-
-  const targetX = gameState.player.x + dx;
-  const targetY = gameState.player.y + dy;
-
-  if (!isWalkable(targetX, targetY)) {
-    setMessage("Unable to go this way.");
-    return;
-  }
-
-  gameState.player.x = targetX;
-  gameState.player.y = targetY;
-  gameState.player.walkFrame = gameState.player.walkFrame === 1 ? 2 : 1;
-  gameState.player.lastMovedAt = performance.now();
-  updateCamera();
-
-  const trigger = getTriggerAt(targetX, targetY);
-  if (trigger) {
-    enterTrigger(trigger);
-    return;
-  }
-
-  const sign = getSignAt(targetX, targetY);
-  if (sign) {
-    setMessage(sign.text);
-    return;
-  }
-
-  if (tileAt(targetX, targetY) === "T" && Math.random() < currentMap().encounterRate) {
-    battleController.beginEncounter();
-    return;
-  }
-
 }
 
 function handleWorldInput() {
@@ -568,7 +257,7 @@ async function handleMenuNavigation(key) {
         gameState.menu.partyIndex = gameState.player.activeIndex;
         setMessage("Browsing your captured creatures.");
       } else if (selected === "Save Game") {
-        await exportSaveJson();
+        await saveController.exportSaveJson();
       } else {
         closeMenu();
       }
@@ -721,40 +410,6 @@ function drawSign(sign) {
   drawText("!", px + 12, py + 19, { align: "center", font: "18px 'Press Start 2P'", color: "#b93c2f" });
 }
 
-function drawPlayer(px, py) {
-  const isSpriteUsable =
-    playerSpriteReady &&
-    playerSprite.complete &&
-    playerSprite.naturalWidth >= PLAYER_SPRITE_FRAME_SIZE * 3 &&
-    playerSprite.naturalHeight >= PLAYER_SPRITE_FRAME_SIZE * 4;
-
-  if (!isSpriteUsable) {
-    drawRoundedRect(px + 8, py + 5, 32, 38, 14, "#ffffff", getActiveCreature().color);
-    drawRoundedRect(px + 12, py + 9, 24, 30, 12, getActiveCreature().color);
-    drawRoundedRect(px + 16, py + 13, 16, 10, 4, "#fff0d8");
-    return;
-  }
-
-  const facingRow = PLAYER_FACING_ROWS[gameState.player.facing] ?? PLAYER_FACING_ROWS.down;
-  const isIdle = performance.now() - gameState.player.lastMovedAt > 180;
-  const frameColumn = isIdle ? 0 : gameState.player.walkFrame;
-
-  ctx.save();
-  ctx.imageSmoothingEnabled = false;
-  ctx.drawImage(
-    playerSprite,
-    frameColumn * PLAYER_SPRITE_FRAME_SIZE,
-    facingRow * PLAYER_SPRITE_FRAME_SIZE,
-    PLAYER_SPRITE_FRAME_SIZE,
-    PLAYER_SPRITE_FRAME_SIZE,
-    px,
-    py,
-    TILE_SIZE,
-    TILE_SIZE
-  );
-  ctx.restore();
-}
-
 function drawWorld() {
   updateCamera();
 
@@ -786,7 +441,7 @@ function drawWorld() {
 
   const playerX = worldToScreenX(gameState.player.x);
   const playerY = worldToScreenY(gameState.player.y);
-  drawPlayer(playerX, playerY);
+  drawPlayer(gameState.player, playerX, playerY);
 
   const elapsed = performance.now() - gameState.messageShownAt;
   let messageOpacity = 1;

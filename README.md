@@ -34,11 +34,14 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 
 - `index.html`: app shell and canvas mount
 - `style.css`: page styling and game shell UI
-- `src/game.js`: game state, world logic, battle loop, rendering, and input
+- `src/game.js`: game state, rendering, and input coordination
 - `src/constants.js`: shared sprite, save, and tile constants
 - `src/moves.js`: move definitions
 - `src/creatures.js`: creature and enemy definitions
 - `src/battle.js`: encounter setup, combat actions, battle navigation, and battle rendering
+- `src/save.js`: save serialization, export, import, and load prompts
+- `src/sprites.js`: player and creature sprite loading, caching, fallback drawing, and sprite rendering
+- `src/world.js`: current map queries, camera movement, triggers, signs, and player movement
 - `src/maps.js`: map terrain, signs, triggers, and encounter settings
 
 ## Map Notes
