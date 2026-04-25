@@ -6,6 +6,7 @@ import { moveCatalog } from "./moves.js";
 import { createSaveController } from "./save.js";
 import { createSpriteController } from "./sprites.js";
 import { createStoryController } from "./story.js";
+import { createTileRenderer } from "./tiles.js";
 import { createWorldController } from "./world.js";
 
 const canvas = document.getElementById("game");
@@ -92,6 +93,10 @@ const {
   drawCreatureSprite,
   drawPlayer
 } = spriteController;
+
+const {
+  drawMapTile
+} = createTileRenderer({ ctx });
 
 const battleController = createBattleController({
   canvas,
@@ -336,69 +341,6 @@ function wrapText(text, x, y, maxWidth, lineHeight) {
   }
 }
 
-function drawMapTile(tile, px, py) {
-  //draw wall
-  if (tile === "W") {
-    drawRoundedRect(px, py, TILE_SIZE, TILE_SIZE, 10, "#6f7a6a");
-    drawRoundedRect(px + 6, py + 6, TILE_SIZE - 12, TILE_SIZE - 12, 8, "#8d9987");
-    return;
-  }
-  
-  //draw road
-  if (tile === "R") {
-    drawRoundedRect(px, py, TILE_SIZE, TILE_SIZE, 0, "#e8c096");
-    ctx.strokeStyle = "#a8a8a3";
-    ctx.lineWidth = 1;
-
-    // Top line
-    ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.lineTo(px + TILE_SIZE, py);
-    ctx.stroke();
-
-    // Vertical middle line
-    ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.lineTo(px, py + TILE_SIZE/2);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(px + TILE_SIZE/2, py + TILE_SIZE/2);
-    ctx.lineTo(px + TILE_SIZE/2, py + TILE_SIZE);
-    ctx.stroke();
-
-    // Horizontal middle line
-    ctx.beginPath();
-    ctx.moveTo(px, py + TILE_SIZE/2 );
-    ctx.lineTo(px + TILE_SIZE, py + TILE_SIZE/2);
-    ctx.stroke();
-
-    // Bottom line
-    ctx.beginPath();
-    ctx.moveTo(px, py + TILE_SIZE);
-    ctx.lineTo(px + TILE_SIZE, py + TILE_SIZE);
-    ctx.stroke();
-  
-    return;
-  }
-
-  drawRoundedRect(px, py, TILE_SIZE, TILE_SIZE, 10, "#88cf8b");
-
-  if (tile === "T") {
-    for (let blade = 0; blade < 5; blade += 1) {
-      const bladeX = px + 8 + blade * 7;
-      ctx.strokeStyle = blade % 2 === 0 ? "#327f4a" : "#3ea65a";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(bladeX, py + TILE_SIZE - 10);
-      ctx.lineTo(bladeX + 3, py + 16 + (blade % 2) * 8);
-      ctx.stroke();
-    }
-    return;
-  } 
-  
-}
-
 function drawTrigger(trigger) {
   const px = worldToScreenX(trigger.x);
   const py = worldToScreenY(trigger.y);
@@ -441,7 +383,7 @@ function drawWorld() {
 
   for (let y = startRow; y < endRow; y += 1) {
     for (let x = startCol; x < endCol; x += 1) {
-      drawMapTile(tileAt(x, y), worldToScreenX(x), worldToScreenY(y));
+      drawMapTile(tileAt(x, y), worldToScreenX(x), worldToScreenY(y), x, y);
     }
   }
 
