@@ -1,8 +1,10 @@
 export const worldMaps = {
   sunmeadow: {
     name: "Sunmeadow",
+    mapType: "meadow",
     palette: { top: "#78c98b", bottom: "#5ea96f" },
     encounterRate: 0.085,
+    wildCreatures: ["Folio", "Lilphant"],
     terrain: [
       "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
       "WRRTTTGGGGGGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
@@ -63,8 +65,10 @@ export const worldMaps = {
   },
   emberCave: {
     name: "Ember Cave",
+    mapType: "cave",
     palette: { top: "#635166", bottom: "#362933" },
     encounterRate: 0.14,
+    wildCreatures: ["Scorcha"],
     terrain: [
       "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
       "WWGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTTTW",
@@ -108,8 +112,10 @@ export const worldMaps = {
   },
   wayfarerHouse: {
     name: "Wayfarer Cottage",
+    mapType: "interior",
     palette: { top: "#000000", bottom: "#020202" },
     encounterRate: -1,
+    wildCreatures: [],
     terrain: [
       "WWWWWWWWWW",
       "WRRRRRRRRW",

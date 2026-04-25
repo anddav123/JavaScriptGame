@@ -54,6 +54,107 @@ function drawRoughRoundedRect(ctx, x, y, width, height, radius, fill, offsets) {
   ctx.fill();
 }
 
+function createGrassTileCanvas(variant, hasTallGrass = false, theme = "meadow") {
+  const grassCanvas = document.createElement("canvas");
+  grassCanvas.width = TILE_SIZE;
+  grassCanvas.height = TILE_SIZE;
+
+  const grassCtx = grassCanvas.getContext("2d");
+  const grassTheme = {
+    meadow: {
+      bases: ["#88cf8b", "#86ca86", "#8bd28a", "#84c985"],
+      lightFill: "rgba(213, 245, 171, 0.05)",
+      shadeFill: "rgba(41, 116, 55, 0.045)",
+      tuftStroke: "rgba(45, 126, 64, 0.28)",
+      bladeShadowStroke: "rgba(34, 100, 52, 0.3)",
+      bladeStrokes: ["#327f4a", "#3ea65a"]
+    },
+    cave: {
+      bases: ["#50685c", "#4a6156", "#566f60", "#455b52"],
+      lightFill: "rgba(155, 176, 145, 0.055)",
+      shadeFill: "rgba(18, 31, 34, 0.12)",
+      tuftStroke: "rgba(27, 72, 59, 0.34)",
+      bladeShadowStroke: "rgba(13, 31, 34, 0.38)",
+      bladeStrokes: ["#244d40", "#2f6350"]
+    }
+  }[theme];
+  const grassTexture = [
+    {
+      light: [[5, 7, 18, 6], [28, 22, 12, 5]],
+      shade: [[8, 34, 15, 5], [33, 8, 7, 14]],
+      tufts: [[9, 29, 10, 25], [21, 16, 23, 13], [35, 37, 37, 33]],
+      blades: [[8, 40, 12, 19], [14, 42, 13, 17], [20, 41, 23, 22], [27, 42, 28, 15], [34, 41, 31, 21], [40, 39, 42, 18]]
+    },
+    {
+      light: [[11, 10, 14, 5], [30, 32, 10, 4]],
+      shade: [[4, 28, 12, 6], [35, 13, 7, 18]],
+      tufts: [[12, 37, 15, 33], [27, 21, 28, 17], [39, 31, 37, 27]],
+      blades: [[7, 41, 9, 22], [13, 40, 17, 16], [22, 42, 21, 20], [29, 41, 32, 18], [36, 42, 35, 15], [42, 40, 39, 24]]
+    },
+    {
+      light: [[6, 18, 13, 5], [24, 7, 17, 5]],
+      shade: [[10, 38, 18, 4], [35, 25, 8, 12]],
+      tufts: [[8, 24, 11, 20], [23, 34, 21, 30], [34, 16, 36, 12]],
+      blades: [[6, 40, 10, 18], [12, 42, 12, 23], [19, 41, 17, 15], [26, 42, 30, 20], [34, 41, 36, 17], [41, 40, 38, 21]]
+    },
+    {
+      light: [[8, 8, 16, 4], [27, 28, 14, 5]],
+      shade: [[7, 31, 10, 8], [31, 13, 10, 15]],
+      tufts: [[13, 18, 15, 14], [25, 38, 28, 34], [40, 26, 39, 22]],
+      blades: [[8, 42, 7, 21], [15, 40, 18, 18], [21, 42, 24, 15], [29, 41, 27, 22], [35, 42, 38, 19], [41, 40, 43, 16]]
+    }
+  ][variant];
+
+  drawRoundedRect(grassCtx, 0, 0, TILE_SIZE, TILE_SIZE, 0, grassTheme.bases[variant]);
+
+  grassCtx.save();
+  traceRoundedRectPath(grassCtx, 0, 0, TILE_SIZE, TILE_SIZE, 0);
+  grassCtx.clip();
+
+  grassCtx.fillStyle = grassTheme.lightFill;
+  for (const [x, y, width, height] of grassTexture.light) {
+    grassCtx.fillRect(x, y, width, height);
+  }
+
+  grassCtx.fillStyle = grassTheme.shadeFill;
+  for (const [x, y, width, height] of grassTexture.shade) {
+    grassCtx.fillRect(x, y, width, height);
+  }
+
+  grassCtx.strokeStyle = grassTheme.tuftStroke;
+  grassCtx.lineWidth = 2;
+  grassCtx.lineCap = "round";
+  grassCtx.beginPath();
+  for (const [startX, startY, endX, endY] of grassTexture.tufts) {
+    grassCtx.moveTo(startX, startY);
+    grassCtx.lineTo(endX, endY);
+  }
+  grassCtx.stroke();
+
+  if (hasTallGrass) {
+    grassCtx.lineWidth = 3;
+    grassCtx.beginPath();
+    grassCtx.strokeStyle = grassTheme.bladeShadowStroke;
+    for (const [baseX, baseY, tipX, tipY] of grassTexture.blades) {
+      grassCtx.moveTo(baseX + 1, baseY);
+      grassCtx.lineTo(tipX + 1, tipY + 2);
+    }
+    grassCtx.stroke();
+
+    grassCtx.beginPath();
+    for (const [baseX, baseY, tipX, tipY] of grassTexture.blades) {
+      grassCtx.strokeStyle = baseX % 2 === 0 ? grassTheme.bladeStrokes[0] : grassTheme.bladeStrokes[1];
+      grassCtx.moveTo(baseX, baseY);
+      grassCtx.lineTo(tipX, tipY);
+      grassCtx.stroke();
+      grassCtx.beginPath();
+    }
+  }
+
+  grassCtx.restore();
+  return grassCanvas;
+}
+
 function createWallTileCanvas(variant) {
   const wallCanvas = document.createElement("canvas");
   wallCanvas.width = TILE_SIZE;
@@ -281,8 +382,18 @@ function tileVariant(mapX, mapY, xWeight, yWeight, variantCount) {
 export function createTileRenderer({ ctx }) {
   const wallTileCanvases = [0, 1, 2, 3].map(createWallTileCanvas);
   const roadTileCanvases = [0, 1, 2, 3].map(createRoadTileCanvas);
+  const grassTileCanvases = {
+    meadow: [0, 1, 2, 3].map((variant) => createGrassTileCanvas(variant)),
+    cave: [0, 1, 2, 3].map((variant) => createGrassTileCanvas(variant, false, "cave"))
+  };
+  const tallGrassTileCanvases = {
+    meadow: [0, 1, 2, 3].map((variant) => createGrassTileCanvas(variant, true)),
+    cave: [0, 1, 2, 3].map((variant) => createGrassTileCanvas(variant, true, "cave"))
+  };
 
-  function drawMapTile(tile, px, py, mapX = 0, mapY = 0) {
+  function drawMapTile(tile, px, py, mapX = 0, mapY = 0, mapType = "meadow") {
+    const grassTheme = grassTileCanvases[mapType] ? mapType : "meadow";
+
     if (tile === "W") {
       const wallVariant = tileVariant(mapX, mapY, 19, 23, wallTileCanvases.length);
       ctx.drawImage(wallTileCanvases[wallVariant], px, py);
@@ -295,19 +406,16 @@ export function createTileRenderer({ ctx }) {
       return;
     }
 
-    drawRoundedRect(ctx, px, py, TILE_SIZE, TILE_SIZE, 10, "#88cf8b");
-
     if (tile === "T") {
-      for (let blade = 0; blade < 5; blade += 1) {
-        const bladeX = px + 8 + blade * 7;
-        ctx.strokeStyle = blade % 2 === 0 ? "#327f4a" : "#3ea65a";
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(bladeX, py + TILE_SIZE - 10);
-        ctx.lineTo(bladeX + 3, py + 16 + (blade % 2) * 8);
-        ctx.stroke();
-      }
+      const tallGrassTiles = tallGrassTileCanvases[grassTheme];
+      const tallGrassVariant = tileVariant(mapX, mapY, 13, 29, tallGrassTiles.length);
+      ctx.drawImage(tallGrassTiles[tallGrassVariant], px, py);
+      return;
     }
+
+    const grassTiles = grassTileCanvases[grassTheme];
+    const grassVariant = tileVariant(mapX, mapY, 11, 37, grassTiles.length);
+    ctx.drawImage(grassTiles[grassVariant], px, py);
   }
 
   return {

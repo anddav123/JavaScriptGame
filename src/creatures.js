@@ -32,9 +32,9 @@ export const creatureTemplates = {
     moves: ["ember", "focus"],
     description: "A fierce cub whose paws glow after every sprint."
   },
-  Ripplefin: {
-    species: "Ripplefin",
-    nickname: "Ripplefin",
+  Lilphant: {
+    species: "Lilphant",
+    nickname: "Lilphant",
     color: "#4d77b4",
     spritePath: "assets/creatures/ripplefin-sprite.png",
     fallbackSpritePath: "assets/creatures/ripplefin-sprite.svg",
@@ -54,3 +54,7 @@ export const enemyTemplates = Object.values(creatureTemplates)
     maxHp: creature.maxHp,
     moves: creature.moves
   }));
+
+export const enemyTemplatesBySpecies = Object.fromEntries(
+  enemyTemplates.map((creature) => [creature.name, creature])
+);

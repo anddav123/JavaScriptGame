@@ -1,4 +1,4 @@
-import { enemyTemplates } from "./creatures.js";
+import { enemyTemplates, enemyTemplatesBySpecies } from "./creatures.js";
 import { moveCatalog } from "./moves.js";
 
 export function createBattleController({
@@ -62,8 +62,22 @@ export function createBattleController({
     return false;
   }
 
+  function wildEncounterPool() {
+    const mapCreatures = currentMap().wildCreatures;
+    if (!Array.isArray(mapCreatures)) return enemyTemplates;
+
+    const mapPool = mapCreatures
+      .map((species) => enemyTemplatesBySpecies[species])
+      .filter(Boolean);
+
+    return mapPool;
+  }
+
   function beginEncounter() {
-    const template = enemyTemplates[Math.floor(Math.random() * enemyTemplates.length)];
+    const encounterPool = wildEncounterPool();
+    if (encounterPool.length === 0) return;
+
+    const template = encounterPool[Math.floor(Math.random() * encounterPool.length)];
     clearKeys();
     getActiveCreature().attackBoost = 0;
     gameState.battle = {

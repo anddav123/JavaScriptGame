@@ -383,7 +383,14 @@ function drawWorld() {
 
   for (let y = startRow; y < endRow; y += 1) {
     for (let x = startCol; x < endCol; x += 1) {
-      drawMapTile(tileAt(x, y), worldToScreenX(x), worldToScreenY(y), x, y);
+      drawMapTile(
+        tileAt(x, y),
+        worldToScreenX(x),
+        worldToScreenY(y),
+        x,
+        y,
+        map.mapType
+      );
     }
   }
 
