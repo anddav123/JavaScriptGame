@@ -5,8 +5,8 @@ export const worldMaps = {
     encounterRate: 0.085,
     terrain: [
       "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-      "WRRTTTGGGGGGGGGGGGGGGGGGGGGGGGGwGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
-      "WRRTTTTGGGGGGGGGGGGGGTTTTGGGGGGwGGGGGGGGGGGGGGGGGGGGTTTTTTTWWGGGGGGGGGGW",
+      "WRRTTTGGGGGGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
+      "WRRTTTTGGGGGGGGGGGGGGTTTTGGGGGGWGGGGGGGGGGGGGGGGGGGGTTTTTTTWWGGGGGGGGGGW",
       "WRRTTTTGGGWWGGGGGGGGGGTTTTGGGGGWWWWWWWWWWWWWRRRWWWWWWWWWWWWWWWWWWWWWWWWW",
       "WRRTTTTGGGWWGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGGGGGGGW",
       "WRRRRRTTTGGGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGRRRGGGGGGGGGGGGGGGGGGGGGGGGW",
@@ -42,8 +42,8 @@ export const worldMaps = {
         message: "You step into Ember Cave."
       },
       {
-        x: 23,
-        y: 12,
+        x: 25,
+        y: 10,
         kind: "door",
         targetMap: "wayfarerHouse",
         targetX: 4,
@@ -129,8 +129,8 @@ export const worldMaps = {
         y: 6,
         kind: "door-exit",
         targetMap: "sunmeadow",
-        targetX: 23,
-        targetY: 13,
+        targetX: 25,
+        targetY: 11,
         message: "You step back outside."
       }
     ]
