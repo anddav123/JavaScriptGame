@@ -811,5 +811,5 @@ document.addEventListener("fullscreenchange", () => {
 });
 
 updateCamera();
-setInterval(handleWorldInput, 150);
+setInterval(handleWorldInput, 250);
 render();
