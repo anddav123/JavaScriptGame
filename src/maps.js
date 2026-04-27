@@ -4,7 +4,7 @@ export const worldMaps = {
     mapType: "meadow",
     palette: { top: "#78c98b", bottom: "#5ea96f" },
     encounterRate: 0.085,
-    wildCreatures: ["Folio", "Lilphant"],
+    wildCreatures: ["Dandelio","Folio", "Lilphant","Sproutrunk","Roselle"],
     terrain: [
       "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
       "WRRTTTGGGGGGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",

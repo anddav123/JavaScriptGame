@@ -6,7 +6,7 @@
    height="1024"
    viewBox="0 0 10240 10240"
    version="1.1"
-   sodipodi:docname="ripplefin-sprite.svg"
+   sodipodi:docname="lilphant-sprite.svg"
    inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -24,9 +24,9 @@
      inkscape:pagecheckerboard="true"
      inkscape:deskcolor="#d1d1d1"
      inkscape:clip-to-page="false"
-     inkscape:zoom="0.37278826"
-     inkscape:cx="822.18254"
-     inkscape:cy="689.39939"
+     inkscape:zoom="1.2758225"
+     inkscape:cx="314.69894"
+     inkscape:cy="355.84886"
      inkscape:window-width="1536"
      inkscape:window-height="795"
      inkscape:window-x="0"
@@ -20693,4 +20693,14 @@
       </g>
     </g>
   </g>
+  <path
+     style="fill:#ffffff;stroke-width:0;stroke-linecap:round;stroke-linejoin:bevel"
+     d="m 206.81079,305.15674 c -0.92519,-0.44781 -2.27609,-2.1313 -3.002,-3.74107 -1.20005,-2.66125 -1.21113,-3.18701 -0.12213,-5.79336 2.30951,-5.52745 7.30688,-5.5183 9.61993,0.0176 1.4601,3.4945 0.77154,6.80234 -1.84429,8.85995 -2.25454,1.77342 -2.32434,1.78328 -4.65151,0.65686 z"
+     id="path1"
+     transform="scale(10)" />
+  <path
+     style="fill:#ffffff;stroke-width:0;stroke-linecap:round;stroke-linejoin:bevel"
+     d="m 421.2129,302.6466 c -3.43467,-2.38167 -5.40272,-6.27138 -5.40272,-10.67809 0,-11.33685 13.14861,-17.08037 22.01756,-9.61764 6.16094,5.18409 5.9708,13.81329 -0.43616,19.79441 -1.74376,1.62787 -3.00821,1.98898 -7.71841,2.20429 -4.96933,0.22716 -5.96611,0.0265 -8.46027,-1.70297 z"
+     id="path2"
+     transform="scale(10)" />
 </svg>

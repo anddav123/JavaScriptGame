@@ -1,12 +1,12 @@
-# Echoes of Ember
+# Orb Bound
 
 A lightweight JavaScript browser RPG prototype with:
 
 - A scrolling 2D overworld rendered on a canvas
 - Tile-based exploration with walls, signs, and encounter grass
 - Multiple maps connected by walk-on triggers such as cave mouths and doors
-- Pokemon-style turn-based battles with moves, healing, and escape chance
-- A Pokemon-inspired trainer menu and party screen for browsing captured creatures
+-  turn-based battles with moves, healing, and escape chance
+- A player menu and party screen for browsing captured creatures
 - A title screen with a simple start menu before gameplay begins
 
 ## Run it
@@ -24,7 +24,7 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 - Start menu navigation: `W` / `S` or arrow keys, confirm with `Enter`
 - Story dialogue: `Enter`
 - Move: `WASD` or arrow keys
-- Open trainer menu: `Enter`
+- Open player menu: `Enter`
 - Toggle fullscreen: `F` or the fullscreen button
 - Menu navigation: `WASD` or arrow keys
 - Confirm party/menu choice: `Enter`

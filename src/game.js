@@ -54,7 +54,7 @@ const gameState = {
     wins: 0,
     activeIndex: 0,
     party: [
-      createCreatureInstance("Roselle", { nickname: "Roselle", role: "Starter", captured: true })
+      createCreatureInstance("Cubling", { nickname: "Rory", role: "Starter", captured: true })
     ]
   },
   battle: null,
@@ -232,7 +232,6 @@ function openMenu() {
   gameState.menu.mode = "main";
   gameState.menu.mainIndex = 0;
   gameState.menu.partyIndex = gameState.player.activeIndex;
-  //setMessage("Trainer menu opened.");
 }
 
 function closeMenu() {
@@ -298,7 +297,6 @@ async function handleMenuNavigation(key) {
       setMessage(`${activeCreature.nickname} is now leading your party.`);
     } else if (key === "Backspace") {
       gameState.menu.mode = "main";
-      setMessage("Trainer menu opened.");
     }
   }
 }
