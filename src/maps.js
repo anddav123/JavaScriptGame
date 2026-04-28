@@ -5,6 +5,7 @@ export const worldMaps = {
     palette: { top: "#78c98b", bottom: "#5ea96f" },
     encounterRate: 0.085,
     wildCreatures: ["Dandelio","Folio", "Lilphant","Sproutrunk","Roselle"],
+    wildLevelRange: { min: 1, max: 10 },
     terrain: [
       "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
       "WRRTTTGGGGGGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
@@ -69,6 +70,7 @@ export const worldMaps = {
     palette: { top: "#635166", bottom: "#362933" },
     encounterRate: 0.14,
     wildCreatures: ["Scorcha"],
+    wildLevelRange: { min: 3, max: 12 },
     terrain: [
       "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
       "WWGGGGGGGGGGGGGGGGGGGGWGGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTTTW",

@@ -8,6 +8,7 @@ export const creatureTemplates = {
     role: "Starter",
     maxHp: 42,
     moves: ["vineSnap", "focus"],
+    ascension: { level: 20, species: "Dandelio" },
     description: "A shy meadow creature that hides in moss and strikes with vines."
   },
   Dandelio: {
@@ -19,6 +20,7 @@ export const creatureTemplates = {
     role: "Wildling",
     maxHp: 64,
     moves: ["vineSnap", "focus"],
+    ascension: { level: 50, species: "Folio" },
     description: "A shy meadow creature that hides in moss and strikes with vines."
   },
   Folio: {
@@ -28,7 +30,7 @@ export const creatureTemplates = {
     spritePath: "assets/creatures/folio-sprite.svg",
     fallbackSpritePath: "assets/creatures/folio-sprite.png",
     role: "Wildling",
-    maxHp: 120,
+    maxHp: 90,
     moves: ["vineSnap", "focus"],
     description: "A shy meadow creature that hides in moss and strikes with vines."
   },
@@ -51,7 +53,8 @@ export const creatureTemplates = {
     fallbackSpritePath: "assets/creatures/sproutrunk-sprite.png",
     role: "Wildling",
     maxHp: 58,
-    moves: ["ember", "vineSnap", "focus", "tonic"],
+    moves: ["ember", "vineSnap", "focus", "heal"],
+    ascension: { level: 30, species: ["Roselle", "Lilphant"] },
     description: "A warm-hearted ember fox that leads the party into danger."
   },
   Roselle: {
@@ -62,7 +65,7 @@ export const creatureTemplates = {
     fallbackSpritePath: "assets/creatures/roselle-sprite.png",
     role: "Wildling",
     maxHp: 58,
-    moves: ["ember", "vineSnap", "focus", "tonic"],
+    moves: ["ember", "vineSnap", "focus", "heal"],
     description: "A warm-hearted ember fox that leads the party into danger."
   },
   Lilphant: {
@@ -73,7 +76,7 @@ export const creatureTemplates = {
     fallbackSpritePath: "assets/creatures/lilphant-sprite.png",
     role: "Wildling",
     maxHp: 44,
-    moves: ["vineSnap", "tonic", "iceShard"],
+    moves: ["vineSnap", "heal", "iceShard"],
     description: "A calm river spirit that mends itself between attacks."
   }
 };

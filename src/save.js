@@ -1,4 +1,4 @@
-import { PLAYER_FACING_ROWS, SAVE_VERSION } from "./constants.js";
+import { PLAYER_FACING_ROWS, PLAYER_MP_RECHARGE_STEP_INTERVAL, SAVE_VERSION } from "./constants.js";
 import { creatureTemplates } from "./creatures.js";
 import { worldMaps } from "./maps.js";
 
@@ -25,8 +25,10 @@ export function createSaveController({
     return createCreatureInstance(creature.species, {
       nickname: typeof creature.nickname === "string" && creature.nickname.trim() ? creature.nickname.trim() : template.nickname,
       role: typeof creature.role === "string" && creature.role.trim() ? creature.role.trim() : template.role,
-      maxHp: Number.isFinite(creature.maxHp) ? Math.max(1, Math.round(creature.maxHp)) : template.maxHp,
-      hp: Number.isFinite(creature.hp) ? Math.max(0, Math.round(creature.hp)) : template.maxHp,
+      maxHp: Number.isFinite(creature.maxHp) ? Math.max(1, Math.round(creature.maxHp)) : undefined,
+      hp: Number.isFinite(creature.hp) ? Math.max(0, Math.round(creature.hp)) : undefined,
+      level: Number.isFinite(creature.level) ? Math.round(creature.level) : undefined,
+      xp: Number.isFinite(creature.xp) ? Math.max(0, Math.round(creature.xp)) : undefined,
       captured: Boolean(creature.captured)
     });
   }
@@ -44,11 +46,16 @@ export function createSaveController({
         potions: gameState.player.potions,
         orbs: gameState.player.orbs,
         wins: gameState.player.wins,
+        maxMp: gameState.player.maxMp,
+        mp: gameState.player.mp,
+        mpRechargeStepProgress: gameState.player.mpRechargeStepProgress,
         activeIndex: gameState.player.activeIndex,
         party: gameState.player.party.map((creature) => ({
           species: creature.species,
           nickname: creature.nickname,
           role: creature.role,
+          level: creature.level,
+          xp: creature.xp,
           maxHp: creature.maxHp,
           hp: creature.hp,
           captured: creature.captured
@@ -119,9 +126,19 @@ export function createSaveController({
       potions: Number.isFinite(parsedSave.player.potions) ? Math.max(0, Math.round(parsedSave.player.potions)) : 0,
       orbs: Number.isFinite(parsedSave.player.orbs) ? Math.max(0, Math.round(parsedSave.player.orbs)) : 0,
       wins: Number.isFinite(parsedSave.player.wins) ? Math.max(0, Math.round(parsedSave.player.wins)) : 0,
+      maxMp: Number.isFinite(parsedSave.player.maxMp) ? Math.max(1, Math.round(parsedSave.player.maxMp)) : gameState.player.maxMp,
       activeIndex,
       party
     };
+    nextPlayer.mp = Number.isFinite(parsedSave.player.mp)
+      ? clamp(Math.round(parsedSave.player.mp), 0, nextPlayer.maxMp)
+      : nextPlayer.maxMp;
+    nextPlayer.mpRechargeStepProgress = Number.isFinite(parsedSave.player.mpRechargeStepProgress)
+      ? clamp(Math.round(parsedSave.player.mpRechargeStepProgress), 0, PLAYER_MP_RECHARGE_STEP_INTERVAL - 1)
+      : 0;
+    if (nextPlayer.mp >= nextPlayer.maxMp) {
+      nextPlayer.mpRechargeStepProgress = 0;
+    }
 
     const previousMapId = gameState.world.currentMapId;
     gameState.world.currentMapId = parsedSave.world.currentMapId;

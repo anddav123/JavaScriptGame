@@ -6,6 +6,7 @@ export function createWorldController({
   gameState,
   setMessage,
   clamp,
+  onPlayerStep = () => {},
   onEncounter
 }) {
   function currentMap() {
@@ -92,6 +93,7 @@ export function createWorldController({
     gameState.player.y = targetY;
     gameState.player.walkFrame = gameState.player.walkFrame === 1 ? 2 : 1;
     gameState.player.lastMovedAt = performance.now();
+    onPlayerStep();
     updateCamera();
 
     const trigger = getTriggerAt(targetX, targetY);

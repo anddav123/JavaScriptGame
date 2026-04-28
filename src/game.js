@@ -1,4 +1,13 @@
-import { TILE_SIZE } from "./constants.js";
+import {
+  CREATURE_HP_PER_LEVEL,
+  CREATURE_MAX_LEVEL,
+  CREATURE_MIN_LEVEL,
+  CREATURE_XP_PER_LEVEL,
+  INITIAL_PLAYER_MAX_MP,
+  PLAYER_MP_RECHARGE_AMOUNT,
+  PLAYER_MP_RECHARGE_STEP_INTERVAL,
+  TILE_SIZE
+} from "./constants.js";
 import { createBattleController } from "./battle.js";
 import { cutscenes } from "./cutscenes.js";
 import { creatureTemplates } from "./creatures.js";
@@ -52,6 +61,9 @@ const gameState = {
     potions: 3,
     orbs: 5,
     wins: 0,
+    maxMp: INITIAL_PLAYER_MAX_MP,
+    mp: INITIAL_PLAYER_MAX_MP,
+    mpRechargeStepProgress: 0,
     activeIndex: 0,
     party: [
       createCreatureInstance("Cubling", { nickname: "Rory", role: "Starter", captured: true })
@@ -67,6 +79,7 @@ const worldController = createWorldController({
   gameState,
   setMessage,
   clamp,
+  onPlayerStep: rechargePlayerMp,
   onEncounter: () => battleController.beginEncounter()
 });
 
@@ -139,14 +152,27 @@ const storyController = createStoryController({
 
 function createCreatureInstance(species, overrides = {}) {
   const template = creatureTemplates[species];
+  const level = Number.isFinite(overrides.level)
+    ? clamp(Math.round(overrides.level), CREATURE_MIN_LEVEL, CREATURE_MAX_LEVEL)
+    : CREATURE_MIN_LEVEL;
+  const defaultXp = (level - CREATURE_MIN_LEVEL) * CREATURE_XP_PER_LEVEL;
+  const maxCreatureXp = (CREATURE_MAX_LEVEL - CREATURE_MIN_LEVEL) * CREATURE_XP_PER_LEVEL;
+  const xp = Number.isFinite(overrides.xp)
+    ? clamp(Math.round(overrides.xp), 0, maxCreatureXp)
+    : defaultXp;
+  const leveledMaxHp = template.maxHp + (level - CREATURE_MIN_LEVEL) * CREATURE_HP_PER_LEVEL;
+  const maxHp = Number.isFinite(overrides.maxHp) ? Math.max(1, Math.round(overrides.maxHp)) : leveledMaxHp;
   return {
     species: template.species,
     nickname: overrides.nickname || template.nickname,
     color: template.color,
     spritePath: template.spritePath,
+    fallbackSpritePath: template.fallbackSpritePath,
     role: overrides.role || template.role,
-    maxHp: overrides.maxHp || template.maxHp,
-    hp: overrides.hp || template.maxHp,
+    level,
+    xp,
+    maxHp,
+    hp: Number.isFinite(overrides.hp) ? clamp(Math.round(overrides.hp), 0, maxHp) : maxHp,
     attackBoost: 0,
     moves: [...template.moves],
     description: template.description,
@@ -177,6 +203,34 @@ function resetEncounterTransition() {
   gameState.encounterTransition.active = false;
   gameState.encounterTransition.startedAt = 0;
   gameState.encounterTransition.enemyName = "";
+}
+
+function rechargePlayerMp() {
+  if (gameState.player.mp >= gameState.player.maxMp) {
+    gameState.player.mpRechargeStepProgress = 0;
+    return;
+  }
+
+  const currentStepProgress = Number.isFinite(gameState.player.mpRechargeStepProgress)
+    ? gameState.player.mpRechargeStepProgress
+    : 0;
+  gameState.player.mpRechargeStepProgress = currentStepProgress + 1;
+
+  if (gameState.player.mpRechargeStepProgress < PLAYER_MP_RECHARGE_STEP_INTERVAL) {
+    return;
+  }
+
+  const rechargeCount = Math.floor(gameState.player.mpRechargeStepProgress / PLAYER_MP_RECHARGE_STEP_INTERVAL);
+  gameState.player.mp = clamp(
+    gameState.player.mp + rechargeCount * PLAYER_MP_RECHARGE_AMOUNT,
+    0,
+    gameState.player.maxMp
+  );
+  gameState.player.mpRechargeStepProgress %= PLAYER_MP_RECHARGE_STEP_INTERVAL;
+
+  if (gameState.player.mp >= gameState.player.maxMp) {
+    gameState.player.mpRechargeStepProgress = 0;
+  }
 }
 
 async function toggleFullscreen() {
@@ -424,6 +478,7 @@ function drawWorld() {
   drawRoundedRect(canvas.width - 280, 18, 262, 106, 18, "rgba(255, 248, 238, 0.45)", "#3d271d");
   drawText(getActiveCreature().nickname, canvas.width - 258, 44, { font: "14px 'Press Start 2P'" });
   drawText(`HP ${getActiveCreature().hp}/${getActiveCreature().maxHp}`, canvas.width - 258, 68, { font: "17px Outfit", color: "#2a7f62" });
+  drawText(`MP ${gameState.player.mp}/${gameState.player.maxMp}`, canvas.width - 150, 68, { font: "17px Outfit", color: "#3d5afe" });
   drawText(`Party ${gameState.player.party.length}`, canvas.width - 258, 90, { font: "17px Outfit" });
   drawText(`Orbs ${gameState.player.orbs}`, canvas.width - 150, 90, { font: "17px Outfit", color: "#9c6644" });
   drawText("Enter: Menu", canvas.width - 258, 112, { font: "15px Outfit", color: "#b93c2f" });
@@ -499,6 +554,7 @@ function drawEncounterTransition() {
   if (progress >= 1) {
     resetEncounterTransition();
     gameState.scene = "battle";
+    battleController.beginPlayerTurn();
   }
 }
 
@@ -545,7 +601,7 @@ function drawMenuOverlay() {
       radius: 16
     });
     drawText(creature.nickname, 150, cardY + 24, { font: "12px 'Press Start 2P'", color: selected ? "#fff8f0" : "#2d1b14" });
-    drawText(`${creature.species}  ${creature.role}`, 150, cardY + 48, {
+    drawText(`${creature.species}  Lv ${creature.level}`, 150, cardY + 48, {
       font: "16px Outfit",
       color: selected ? "#fff8f0" : "#694435"
     });
@@ -564,6 +620,9 @@ function drawMenuOverlay() {
   });
 
   const viewedCreature = gameState.player.party[gameState.menu.partyIndex];
+  const xpProgress = viewedCreature.level >= CREATURE_MAX_LEVEL
+    ? "MAX"
+    : `${viewedCreature.xp % CREATURE_XP_PER_LEVEL}/${CREATURE_XP_PER_LEVEL}`;
   drawRoundedRect(484, 104, 398, 388, 16, "#fff7ef", "#3d271d");
   drawCreatureSprite(viewedCreature, 602, 124, 164, 150, {
     frameColor: viewedCreature.color,
@@ -572,14 +631,15 @@ function drawMenuOverlay() {
   });
   drawText(viewedCreature.nickname, 516, 300, { font: "14px 'Press Start 2P'" });
   drawText(viewedCreature.species, 516, 332, { font: "20px Outfit", color: "#694435" });
-  drawText(`Role: ${viewedCreature.role}`, 516, 360, { font: "18px Outfit", color: "#2a7f62" });
-  drawText(`Moves: ${viewedCreature.moves.map((moveId) => moveCatalog[moveId].name).join(", ")}`, 516, 392, {
+  drawText(`Level ${viewedCreature.level}  XP ${xpProgress}`, 516, 360, { font: "18px Outfit", color: "#2a7f62" });
+  drawText(`Role: ${viewedCreature.role}`, 516, 388, { font: "17px Outfit", color: "#694435" });
+  drawText(`Moves: ${viewedCreature.moves.map((moveId) => moveCatalog[moveId].name).join(", ")}`, 516, 420, {
     font: "17px Outfit",
     color: "#694435"
   });
   ctx.font = "18px Outfit";
   ctx.fillStyle = "#694435";
-  wrapText(viewedCreature.description, 516, 428, 324, 24);
+  wrapText(viewedCreature.description, 516, 456, 324, 24);
 }
 
 function drawStartMenu() {
