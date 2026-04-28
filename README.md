@@ -7,7 +7,7 @@ A lightweight JavaScript browser RPG prototype with:
 - Multiple maps connected by walk-on triggers such as cave mouths and doors
 - Turn-based battles with move MP costs, map-ranged wild levels, creature leveling, ascension, healing, and escape chance
 - A player menu and party screen for browsing captured creatures, levels, XP, HP, and moves
-- A title screen with a simple start menu before gameplay begins
+- A title screen using custom menu artwork before gameplay begins
 
 ## Run it
 
@@ -59,6 +59,8 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 - `index.html`: app shell and canvas mount
 - `changelog.md`: dated project change history
 - `style.css`: page styling and game shell UI
+- `assets/menu.svg`: title screen source artwork
+- `assets/menu.png`: optimized title screen runtime background generated from `assets/menu.svg`
 - `assets/player-sprite.png`: 48px-frame player sprite sheet, with `assets/player-sprite.svg` as fallback
 - `src/game.js`: game state, rendering, input coordination, party UI, scene routing, and overworld MP recovery
 - `src/ascensionCutscene.js`: runtime ascension cutscene state, sprite morph animation, and input advancement

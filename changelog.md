@@ -8,6 +8,7 @@ Project changes are recorded here by date. The README stays focused on what the 
 - Added move MP costs and blocked unaffordable moves in battle.
 - Added overworld MP recharge: 1 MP every 2 successful steps.
 - Added battle MP recovery through the `MP +1` action.
+- Added `assets/menu.svg` as the title screen source artwork and `assets/menu.png` as the faster runtime background.
 - Added automatic skipped-turn MP recovery when no active creature moves can be afforded.
 - Added creature XP, levels, level cap, and HP growth.
 - Added ascension rules for `Cubling`, `Dandelio`, and `Sproutrunk`.

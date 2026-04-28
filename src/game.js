@@ -23,12 +23,40 @@ const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 const canvasFrame = document.getElementById("canvas-frame");
 const fullscreenToggle = document.getElementById("fullscreen-toggle");
+const START_MENU_BACKGROUND_SOURCES = ["assets/menu.png", "assets/menu.svg"];
 
 const VIEW_COLS = Math.floor(canvas.width / TILE_SIZE);
 const VIEW_ROWS = Math.floor(canvas.height / TILE_SIZE);
 
 const keys = new Set();
 let mouse = { x: 0, y: 0 };
+
+const startMenuBackground = {
+  image: new Image(),
+  ready: false
+};
+let startMenuBackgroundSourceIndex = 0;
+
+startMenuBackground.image.decoding = "async";
+startMenuBackground.image.fetchPriority = "high";
+
+startMenuBackground.image.addEventListener("load", () => {
+  startMenuBackground.ready = true;
+});
+startMenuBackground.image.addEventListener("error", () => {
+  startMenuBackground.ready = false;
+  startMenuBackgroundSourceIndex += 1;
+  loadStartMenuBackground();
+});
+
+function loadStartMenuBackground() {
+  const nextSource = START_MENU_BACKGROUND_SOURCES[startMenuBackgroundSourceIndex];
+  if (!nextSource) return;
+  startMenuBackground.ready = false;
+  startMenuBackground.image.src = nextSource;
+}
+
+loadStartMenuBackground();
 
 const gameState = {
   scene: "start",
@@ -513,6 +541,38 @@ function drawHpBar(x, y, width, value, max, color) {
   drawRoundedRect(x + 2, y + 2, (width - 4) * (value / max), 12, 6, color);
 }
 
+function drawCoverImage(image) {
+  const scale = Math.max(canvas.width / image.naturalWidth, canvas.height / image.naturalHeight);
+  const width = image.naturalWidth * scale;
+  const height = image.naturalHeight * scale;
+  const x = (canvas.width - width) / 2;
+  const y = (canvas.height - height) / 2;
+  ctx.drawImage(image, x, y, width, height);
+}
+
+function drawStartMenuBackground() {
+  if (startMenuBackground.ready && startMenuBackground.image.naturalWidth > 0) {
+    drawCoverImage(startMenuBackground.image);
+    return true;
+  }
+
+  const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  sky.addColorStop(0, "#f6d365");
+  sky.addColorStop(0.52, "#f5a16c");
+  sky.addColorStop(1, "#c8553d");
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.fillStyle = "rgba(255, 249, 241, 0.18)";
+  ctx.beginPath();
+  ctx.arc(170, 120, 110, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(820, 98, 92, 0, Math.PI * 2);
+  ctx.fill();
+  return false;
+}
+
 function easeOutCubic(value) {
   return 1 - (1 - value) ** 3;
 }
@@ -667,54 +727,41 @@ function drawMenuOverlay() {
 }
 
 function drawStartMenu() {
-  const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
-  sky.addColorStop(0, "#f6d365");
-  sky.addColorStop(0.52, "#f5a16c");
-  sky.addColorStop(1, "#c8553d");
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const hasBackgroundArtwork = drawStartMenuBackground();
 
-  ctx.fillStyle = "rgba(255, 249, 241, 0.18)";
-  ctx.beginPath();
-  ctx.arc(170, 120, 110, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(820, 98, 92, 0, Math.PI * 2);
-  ctx.fill();
+  if (!hasBackgroundArtwork) {
+    drawRoundedRect(84, 70, 792, 184, 28, "rgba(255, 248, 238, 0.9)", "#3d271d");
+    drawText("Orb Bound", 480, 138, { font: "34px 'Press Start 2P'", color: "#b93c2f", align: "center" });
+    drawText("A meadow-born creature RPG", 480, 186, { font: "24px Outfit", color: "#694435", align: "center" });
+    drawText("Explore, battle, capture, and uncover connected maps.", 480, 222, {
+      font: "20px Outfit",
+      color: "#694435",
+      align: "center"
+    });
+  }
 
-  drawRoundedRect(84, 70, 792, 184, 28, "rgba(255, 248, 238, 0.9)", "#3d271d");
-  drawText("Orb Bound", 480, 138, { font: "34px 'Press Start 2P'", color: "#b93c2f", align: "center" });
-  drawText("A meadow-born creature RPG", 480, 186, { font: "24px Outfit", color: "#694435", align: "center" });
-  drawText("Explore, battle, capture, and uncover connected maps.", 480, 222, {
-    font: "20px Outfit",
-    color: "#694435",
-    align: "center"
-  });
-
-  drawRoundedRect(124, 294, 332, 204, 24, "rgba(255, 248, 238, 0.96)", "#3d271d");
-  drawText("Start Menu", 166, 332, { font: "16px 'Press Start 2P'", color: "#b93c2f" });
+  drawRoundedRect(126, 314, 330, 176, 20, "rgba(255, 248, 238, 0.94)", "#1c2634");
+  drawText("Start Menu", 166, 350, { font: "15px 'Press Start 2P'", color: "#1c2634" });
 
   startMenuOptions().forEach((option, index) => {
     const selected = index === gameState.startMenu.index;
-    drawRoundedRect(154, 358 + index * 52, 272, 40, 14, selected ? "#c8553d" : "#fff3e2", "#3d271d");
-    drawText(option, 182, 384 + index * 52, {
+    drawRoundedRect(154, 374 + index * 52, 272, 40, 14, selected ? "#f9d85d" : "#fff3e2", "#1c2634");
+    drawText(option, 182, 400 + index * 52, {
       font: "12px 'Press Start 2P'",
-      color: selected ? "#fff8f0" : "#2d1b14"
+      color: selected ? "#1c2634" : "#2d1b14"
     });
   });
 
-  drawRoundedRect(496, 294, 340, 204, 24, "rgba(255, 248, 238, 0.96)", "#3d271d");
-  drawText("Controls", 532, 332, { font: "16px 'Press Start 2P'", color: "#2a7f62" });
-  drawText("Move", 532, 374, { font: "20px Outfit", color: "#694435" });
-  drawText("WASD / Arrow Keys", 800, 374, { font: "20px Outfit", color: "#2d1b14", align: "right" });
-  drawText("Menu", 532, 410, { font: "20px Outfit", color: "#694435" });
-  drawText("Enter", 800, 410, { font: "20px Outfit", color: "#2d1b14", align: "right" });
-  drawText("Fullscreen", 532, 446, { font: "20px Outfit", color: "#694435" });
-  drawText("F", 800, 446, { font: "20px Outfit", color: "#2d1b14", align: "right" });
-  drawText("Select", 532, 482, { font: "20px Outfit", color: "#694435" });
-  drawText("Enter", 800, 482, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+  drawRoundedRect(504, 314, 332, 176, 20, "rgba(255, 248, 238, 0.9)", "#1c2634");
+  drawText("Controls", 540, 350, { font: "15px 'Press Start 2P'", color: "#1c2634" });
+  drawText("Move", 540, 392, { font: "20px Outfit", color: "#694435" });
+  drawText("WASD / Arrow Keys", 800, 392, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+  drawText("Select", 540, 430, { font: "20px Outfit", color: "#694435" });
+  drawText("Enter / Click", 800, 430, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+  drawText("Fullscreen", 540, 468, { font: "20px Outfit", color: "#694435" });
+  drawText("F", 800, 468, { font: "20px Outfit", color: "#2d1b14", align: "right" });
 
-  drawRoundedRect(104, 522, 752, 34, 14, "rgba(58, 30, 22, 0.42)");
+  drawRoundedRect(104, 522, 752, 34, 14, "rgba(28, 38, 52, 0.58)");
   drawText("Start fresh or load a JSON save to continue.", 480, 544, {
     font: "18px Outfit",
     color: "#fff8f0",
