@@ -12,6 +12,8 @@ Project changes are recorded here by date. The README stays focused on what the 
 - Added creature XP, levels, level cap, and HP growth.
 - Added ascension rules for `Cubling`, `Dandelio`, and `Sproutrunk`.
 - Added after-battle messages for level-ups and ascensions.
+- Added after-battle ascension cutscenes that morph the original creature sprite into the new form.
+- Moved runtime ascension cutscene logic into its own controller module.
 - Deferred HP refill and ascension form changes until after the battle window closes.
 - Added map-based wild creature level ranges.
 - Added 30 new attack moves to the move catalog.

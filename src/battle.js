@@ -23,7 +23,8 @@ export function createBattleController({
   drawRoundedRect,
   drawText,
   drawHpBar,
-  drawCreatureSprite
+  drawCreatureSprite,
+  startAscensionSequence
 }) {
   function captureCreature(species) {
     const enemy = gameState.battle?.enemy;
@@ -49,6 +50,32 @@ export function createBattleController({
       gameState.battle.afterBattleMessages = [];
     }
     gameState.battle.afterBattleMessages.push(text);
+  }
+
+  function queueAfterBattleAscension(ascension) {
+    if (!gameState.battle) return;
+    if (!Array.isArray(gameState.battle.afterBattleAscensions)) {
+      gameState.battle.afterBattleAscensions = [];
+    }
+    gameState.battle.afterBattleAscensions.push(ascension);
+  }
+
+  function createCreatureSnapshot(creature) {
+    const species = creature.species || creature.name;
+    return {
+      species,
+      name: creature.name || species,
+      nickname: creature.nickname || species,
+      color: creature.color,
+      spritePath: creature.spritePath,
+      fallbackSpritePath: creature.fallbackSpritePath,
+      role: creature.role,
+      level: creature.level,
+      maxHp: creature.maxHp,
+      hp: creature.hp,
+      moves: Array.isArray(creature.moves) ? [...creature.moves] : [],
+      description: creature.description
+    };
   }
 
   function attemptCatch() {
@@ -123,6 +150,7 @@ export function createBattleController({
       turn: "player",
       log: [`A wild ${template.name} Lv ${level} appeared!`],
       afterBattleMessages: [],
+      afterBattleAscensions: [],
       buttons: [],
       selectionIndex: 0
     };
@@ -204,6 +232,7 @@ export function createBattleController({
     const targetTemplate = creatureTemplates[targetSpecies];
     if (!targetTemplate || targetTemplate.species === creature.species) return false;
 
+    const beforeAscension = createCreatureSnapshot(creature);
     const previousSpecies = creature.species;
     const targetMaxHp = leveledMaxHpForSpecies(targetTemplate.species, creature.level);
     const hpGain = Math.max(0, targetMaxHp - creature.maxHp);
@@ -223,6 +252,13 @@ export function createBattleController({
     const ascensionMessage = `${creature.nickname} ascended from ${previousSpecies} into ${targetTemplate.species}!`;
     writeBattleLog(ascensionMessage);
     queueAfterBattleMessage(ascensionMessage);
+    queueAfterBattleAscension({
+      before: beforeAscension,
+      after: createCreatureSnapshot(creature),
+      fromSpecies: previousSpecies,
+      toSpecies: targetTemplate.species,
+      message: ascensionMessage
+    });
     return true;
   }
 
@@ -350,18 +386,25 @@ export function createBattleController({
       if (gameState.battle !== battle) return;
 
       let outcomeMessage = "";
+      let ascensionScenes = [];
       if (playerWon) {
         const victoryMessage = `${activeCreature.nickname} won in ${currentMap().name}. Total victories: ${gameState.player.wins}.`;
         awardCreatureWinProgress(activeCreature);
         const milestoneMessages = battle.afterBattleMessages ?? [];
+        ascensionScenes = battle.afterBattleAscensions ?? [];
         outcomeMessage = milestoneMessages.length > 0 ? `${victoryMessage} ${milestoneMessages.join(" ")}` : victoryMessage;
       } else if (playerFainted) {
         activeCreature.hp = activeCreature.maxHp;
         outcomeMessage = `${activeCreature.nickname} fainted, then recovered back at camp.`;
       }
 
-      gameState.scene = "world";
       gameState.battle = null;
+      if (playerWon && ascensionScenes.length > 0 && typeof startAscensionSequence === "function") {
+        startAscensionSequence(ascensionScenes, outcomeMessage);
+        return;
+      }
+
+      gameState.scene = "world";
       if (outcomeMessage) {
         setMessage(outcomeMessage);
       }

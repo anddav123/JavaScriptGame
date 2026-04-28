@@ -42,7 +42,8 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 - Winning battles grants 2 XP to the active creature
 - Every 10 XP grants 1 level, up to level 100
 - Each level grants +2 max HP and +2 current HP
-- Level-up and ascension messages appear after the battle closes
+- Level-up messages appear after the battle closes
+- Ascensions play a short sprite-morph cutscene before returning to the overworld
 
 ## Ascension
 
@@ -50,6 +51,7 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 - `Dandelio` ascends into `Folio` at level 50
 - `Sproutrunk` ascends randomly into `Roselle` or `Lilphant` at level 30
 - Ascended creatures keep their level, XP, current role, captured state, and custom nickname
+- Ascension cutscenes preserve the original sprite briefly, then morph into the new creature sprite
 - Ascension rules live on creature templates in `src/creatures.js`
 
 ## Files
@@ -58,14 +60,15 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 - `changelog.md`: dated project change history
 - `style.css`: page styling and game shell UI
 - `assets/player-sprite.png`: 48px-frame player sprite sheet, with `assets/player-sprite.svg` as fallback
-- `src/game.js`: game state, rendering, input coordination, party UI, and overworld MP recovery
+- `src/game.js`: game state, rendering, input coordination, party UI, scene routing, and overworld MP recovery
+- `src/ascensionCutscene.js`: runtime ascension cutscene state, sprite morph animation, and input advancement
 - `src/constants.js`: shared sprite, save, tile, MP, and creature progression constants
 - `src/cutscenes.js`: story scene data and dialogue steps
 - `src/moves.js`: move definitions, MP costs, healing moves, and move cost helpers
 - `src/creatures.js`: creature templates, starting moves, ascension rules, and enemy template setup
 - `src/battle.js`: encounter setup, combat actions, MP recovery, XP rewards, ascension, battle navigation, and battle rendering
 - `src/save.js`: save serialization, export, import, load prompts, MP state, and creature progression state
-- `src/sprites.js`: player and creature sprite loading, caching, fallback drawing, and sprite rendering
+- `src/sprites.js`: player and creature sprite loading, caching, preloading, fallback drawing, and sprite rendering
 - `src/story.js`: cutscene state, image loading, dialogue advancement, and cutscene rendering
 - `src/world.js`: current map queries, camera movement, triggers, signs, and player movement
 - `src/maps.js`: map terrain, signs, triggers, encounter rates, wild creature pools, and wild level ranges

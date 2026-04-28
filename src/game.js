@@ -8,6 +8,7 @@ import {
   PLAYER_MP_RECHARGE_STEP_INTERVAL,
   TILE_SIZE
 } from "./constants.js";
+import { createAscensionCutsceneController } from "./ascensionCutscene.js";
 import { createBattleController } from "./battle.js";
 import { cutscenes } from "./cutscenes.js";
 import { creatureTemplates } from "./creatures.js";
@@ -71,6 +72,7 @@ const gameState = {
   },
   battle: null,
   cutscene: null,
+  ascensionSequence: null,
   pointerHotspot: null
 };
 
@@ -104,12 +106,33 @@ const spriteController = createSpriteController({
 
 const {
   drawCreatureSprite,
-  drawPlayer
+  drawPlayer,
+  preloadCreatureSprite
 } = spriteController;
 
 const {
   drawMapTile
 } = createTileRenderer({ ctx });
+
+const ascensionCutsceneController = createAscensionCutsceneController({
+  canvas,
+  ctx,
+  gameState,
+  clearKeys: () => keys.clear(),
+  setMessage,
+  clamp,
+  drawRoundedRect,
+  drawText,
+  wrapText,
+  drawCreatureSprite,
+  preloadCreatureSprite
+});
+
+const {
+  advanceAscensionScene,
+  drawAscensionScene,
+  startAscensionSequence
+} = ascensionCutsceneController;
 
 const battleController = createBattleController({
   canvas,
@@ -125,7 +148,8 @@ const battleController = createBattleController({
   drawRoundedRect,
   drawText,
   drawHpBar,
-  drawCreatureSprite
+  drawCreatureSprite,
+  startAscensionSequence
 });
 
 const saveController = createSaveController({
@@ -705,6 +729,8 @@ function render() {
     drawStartMenu();
   } else if (gameState.scene === "cutscene") {
     storyController.drawCutscene();
+  } else if (gameState.scene === "ascension") {
+    drawAscensionScene();
   } else if (gameState.scene === "encounter") {
     drawEncounterTransition();
   } else if (gameState.scene === "battle") {
@@ -740,6 +766,16 @@ window.addEventListener("keydown", (event) => {
   if (gameState.scene === "cutscene") {
     if (key === "Enter") {
       storyController.advanceCutscene();
+      event.preventDefault();
+    }
+    return;
+  }
+
+  if (gameState.scene === "ascension") {
+    if (key === "Enter") {
+      advanceAscensionScene();
+    }
+    if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
       event.preventDefault();
     }
     return;

@@ -141,6 +141,10 @@ export function createSpriteController({
     ctx.restore();
   }
 
+  function preloadCreatureSprite(species) {
+    ensureCreatureSprite(species);
+  }
+
   function drawPlayer(player, x, y) {
     const playerSprite = playerSpriteRecord.image;
     const frameSize = playerSpriteRecord.frameSize;
@@ -179,6 +183,7 @@ export function createSpriteController({
 
   return {
     drawCreatureSprite,
-    drawPlayer
+    drawPlayer,
+    preloadCreatureSprite
   };
 }
