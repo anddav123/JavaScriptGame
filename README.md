@@ -60,8 +60,9 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 - `changelog.md`: dated project change history
 - `style.css`: page styling and game shell UI
 - `assets/menu.svg`: title screen source artwork
-- `assets/menu.png`: optimized title screen runtime background generated from `assets/menu.svg`
-- `assets/player-sprite.png`: 48px-frame player sprite sheet, with `assets/player-sprite.svg` as fallback
+- `assets/menu.png`: optimized 960x576 title screen runtime background generated from `assets/menu.svg`
+- `assets/player-sprite.png`: 48px-frame player sprite sheet, with `assets/player-sprite.svg` as fallback/source artwork
+- `assets/creatures/`: optimized 256px runtime creature PNGs, with SVG fallbacks/source artwork
 - `src/game.js`: game state, rendering, input coordination, party UI, scene routing, and overworld MP recovery
 - `src/ascensionCutscene.js`: runtime ascension cutscene state, sprite morph animation, and input advancement
 - `src/constants.js`: shared sprite, save, tile, MP, and creature progression constants
@@ -74,7 +75,7 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 - `src/story.js`: cutscene state, image loading, dialogue advancement, and cutscene rendering
 - `src/world.js`: current map queries, camera movement, triggers, signs, and player movement
 - `src/maps.js`: map terrain, signs, triggers, encounter rates, wild creature pools, and wild level ranges
-- `assets/story/`: story and cutscene artwork, with PNG images and SVG fallbacks
+- `assets/story/`: story and cutscene artwork, with canvas-sized PNG images and SVG fallbacks/source artwork
 
 ## Map Notes
 

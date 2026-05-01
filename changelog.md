@@ -2,6 +2,14 @@
 
 Project changes are recorded here by date. The README stays focused on what the project is and how to run it.
 
+## 2026-05-01
+
+- Regenerated runtime PNG artwork from SVG sources for current canvas usage.
+- Scaled creature runtime PNGs from 512x512 to 256x256 while keeping SVG source/fallback files.
+- Resized the intro story PNG to the exact cover size used by the game canvas.
+- Switched player and creature sprite loading to use PNG first, with SVG as fallback/source artwork.
+- Updated README asset notes for the optimized runtime PNG workflow.
+
 ## 2026-04-28
 
 - Added player MP with a starting pool of 25.
