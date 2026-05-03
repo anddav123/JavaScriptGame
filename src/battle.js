@@ -1,4 +1,11 @@
-import { creatureTemplates, enemyTemplates, enemyTemplatesBySpecies } from "./creatures.js";
+import {
+  creatureTemplates,
+  defaultMovesForLevel,
+  enemyTemplates,
+  enemyTemplatesBySpecies,
+  learnableMovesForLevelGain,
+  MAX_CREATURE_MOVES
+} from "./creatures.js";
 import {
   CREATURE_HP_PER_LEVEL,
   CREATURE_MAX_LEVEL,
@@ -24,7 +31,8 @@ export function createBattleController({
   drawText,
   drawHpBar,
   drawCreatureSprite,
-  startAscensionSequence
+  startAscensionSequence,
+  startMoveLearningSequence
 }) {
   function captureCreature(species) {
     const enemy = gameState.battle?.enemy;
@@ -145,12 +153,14 @@ export function createBattleController({
         level,
         maxHp,
         hp: maxHp,
-        attackBoost: 0
+        attackBoost: 0,
+        moves: defaultMovesForLevel(template.name, level)
       },
       turn: "player",
       log: [`A wild ${template.name} Lv ${level} appeared!`],
       afterBattleMessages: [],
       afterBattleAscensions: [],
+      afterBattleLearnMoves: [],
       buttons: [],
       selectionIndex: 0
     };
@@ -210,8 +220,9 @@ export function createBattleController({
 
   function applyLevelGain(creature, nextLevel) {
     const gainedLevels = nextLevel - creature.level;
-    if (gainedLevels <= 0) return;
+    if (gainedLevels <= 0) return creature.level;
 
+    const previousLevel = creature.level;
     const hpGain = gainedLevels * CREATURE_HP_PER_LEVEL;
     creature.level = nextLevel;
     creature.maxHp += hpGain;
@@ -221,6 +232,54 @@ export function createBattleController({
       : `${creature.nickname} gained ${gainedLevels} levels to level ${creature.level}.`;
     writeBattleLog(levelMessage);
     queueAfterBattleMessage(levelMessage);
+    return previousLevel;
+  }
+
+  function moveName(moveId) {
+    return moveCatalog[moveId]?.name ?? moveId;
+  }
+
+  function moveSummary(moveId) {
+    const move = moveCatalog[moveId];
+    if (!move) return moveId;
+
+    const effect = move.power > 0
+      ? `${move.power} power`
+      : move.heal
+        ? `heals ${move.heal} HP`
+        : "support";
+    return `${move.name} — ${effect}, ${getMoveCost(move)} MP`;
+  }
+
+  function queueAfterBattleLearnMove(creature, moveId) {
+    if (!gameState.battle) return;
+    if (!Array.isArray(gameState.battle.afterBattleLearnMoves)) {
+      gameState.battle.afterBattleLearnMoves = [];
+    }
+    gameState.battle.afterBattleLearnMoves.push({ creature, moveId });
+  }
+
+  function teachMoveIfPossible(creature, moveId) {
+    if (!moveCatalog[moveId] || creature.moves.includes(moveId)) return;
+
+    if (creature.moves.length < MAX_CREATURE_MOVES) {
+      creature.moves.push(moveId);
+      const learnedMessage = `${creature.nickname} learned ${moveName(moveId)}.`;
+      writeBattleLog(learnedMessage);
+      queueAfterBattleMessage(learnedMessage);
+      return;
+    }
+
+    const promptMessage = `${creature.nickname} can learn ${moveName(moveId)}.`;
+    writeBattleLog(promptMessage);
+    queueAfterBattleMessage(`${promptMessage} Choose a move to forget.`);
+    queueAfterBattleLearnMove(creature, moveId);
+  }
+
+  function teachLevelUpMoves(creature, previousLevel, nextLevel) {
+    for (const moveId of learnableMovesForLevelGain(creature.species, previousLevel, nextLevel)) {
+      teachMoveIfPossible(creature, moveId);
+    }
   }
 
   function chooseAscensionSpecies(rule) {
@@ -246,7 +305,9 @@ export function createBattleController({
     creature.fallbackSpritePath = targetTemplate.fallbackSpritePath;
     creature.maxHp = Math.max(creature.maxHp, targetMaxHp);
     creature.hp = clamp(creature.hp + hpGain, 0, creature.maxHp);
-    creature.moves = [...targetTemplate.moves];
+    creature.moves = Array.isArray(creature.moves) && creature.moves.length > 0
+      ? creature.moves.slice(0, MAX_CREATURE_MOVES)
+      : [...targetTemplate.moves].slice(0, MAX_CREATURE_MOVES);
     creature.description = targetTemplate.description;
 
     const ascensionMessage = `${creature.nickname} ascended from ${previousSpecies} into ${targetTemplate.species}!`;
@@ -287,8 +348,11 @@ export function createBattleController({
       CREATURE_MIN_LEVEL,
       CREATURE_MAX_LEVEL
     );
-    applyLevelGain(creature, nextLevel);
+    const previousLevel = applyLevelGain(creature, nextLevel);
     tryAscendCreature(creature);
+    if (Number.isFinite(previousLevel) && nextLevel > previousLevel) {
+      teachLevelUpMoves(creature, previousLevel, nextLevel);
+    }
   }
 
   function applyMove(attacker, defender, moveId, owner) {
@@ -392,7 +456,13 @@ export function createBattleController({
         awardCreatureWinProgress(activeCreature);
         const milestoneMessages = battle.afterBattleMessages ?? [];
         ascensionScenes = battle.afterBattleAscensions ?? [];
+        const learnMoves = battle.afterBattleLearnMoves ?? [];
         outcomeMessage = milestoneMessages.length > 0 ? `${victoryMessage} ${milestoneMessages.join(" ")}` : victoryMessage;
+        if (learnMoves.length > 0 && typeof startMoveLearningSequence === "function") {
+          gameState.battle = null;
+          startMoveLearningSequence(learnMoves, outcomeMessage, ascensionScenes);
+          return;
+        }
       } else if (playerFainted) {
         activeCreature.hp = activeCreature.maxHp;
         outcomeMessage = `${activeCreature.nickname} fainted, then recovered back at camp.`;
@@ -606,6 +676,119 @@ export function createBattleController({
     }
   }
 
+  function activeMoveLearningPrompt() {
+    const moveLearning = gameState.moveLearning;
+    if (!moveLearning || !Array.isArray(moveLearning.queue) || moveLearning.queue.length === 0) return null;
+    return moveLearning.queue[0];
+  }
+
+  function finishMoveLearningSequence() {
+    const moveLearning = gameState.moveLearning;
+    const outcomeMessage = moveLearning?.outcomeMessage ?? "";
+    const ascensionScenes = moveLearning?.ascensionScenes ?? [];
+    gameState.moveLearning = null;
+
+    if (ascensionScenes.length > 0 && typeof startAscensionSequence === "function") {
+      startAscensionSequence(ascensionScenes, outcomeMessage);
+      return;
+    }
+
+    gameState.scene = "world";
+    if (outcomeMessage) {
+      setMessage(outcomeMessage);
+    }
+  }
+
+  function resolveCurrentMoveLearning(replaceIndex = null) {
+    const moveLearning = gameState.moveLearning;
+    const prompt = activeMoveLearningPrompt();
+    if (!moveLearning || !prompt) return;
+
+    const { creature, moveId } = prompt;
+    const newMoveName = moveName(moveId);
+    let resultMessage;
+    if (Number.isInteger(replaceIndex) && replaceIndex >= 0 && replaceIndex < creature.moves.length) {
+      const oldMoveId = creature.moves[replaceIndex];
+      creature.moves[replaceIndex] = moveId;
+      resultMessage = `${creature.nickname} forgot ${moveName(oldMoveId)} and learned ${newMoveName}.`;
+    } else {
+      resultMessage = `${creature.nickname} did not learn ${newMoveName}.`;
+    }
+    setMessage(resultMessage);
+    moveLearning.outcomeMessage = moveLearning.outcomeMessage
+      ? `${moveLearning.outcomeMessage} ${resultMessage}`
+      : resultMessage;
+
+    moveLearning.queue.shift();
+    moveLearning.selectionIndex = 0;
+    if (moveLearning.queue.length === 0) {
+      finishMoveLearningSequence();
+    }
+  }
+
+  function handleMoveLearningNavigation(key) {
+    const moveLearning = gameState.moveLearning;
+    const prompt = activeMoveLearningPrompt();
+    if (!moveLearning || !prompt) return;
+
+    const optionCount = prompt.creature.moves.length + 1;
+    if (key === "ArrowUp" || key === "w") {
+      moveLearning.selectionIndex = (moveLearning.selectionIndex - 1 + optionCount) % optionCount;
+    } else if (key === "ArrowDown" || key === "s") {
+      moveLearning.selectionIndex = (moveLearning.selectionIndex + 1) % optionCount;
+    } else if (key === "Backspace") {
+      resolveCurrentMoveLearning(null);
+    } else if (key === "Enter") {
+      const selected = clamp(moveLearning.selectionIndex ?? 0, 0, optionCount - 1);
+      resolveCurrentMoveLearning(selected < prompt.creature.moves.length ? selected : null);
+    }
+  }
+
+  function drawMoveLearning() {
+    const prompt = activeMoveLearningPrompt();
+    if (!prompt) {
+      finishMoveLearningSequence();
+      return;
+    }
+
+    const moveLearning = gameState.moveLearning;
+    const { creature, moveId } = prompt;
+    const newMove = moveCatalog[moveId];
+    const newMoveName = newMove?.name ?? moveName(moveId);
+    const options = [
+      ...creature.moves.map((knownMoveId, index) => ({ index, label: `Forget ${moveSummary(knownMoveId)}` })),
+      { index: null, label: `Do not learn ${moveSummary(moveId)}` }
+    ];
+    moveLearning.selectionIndex = clamp(moveLearning.selectionIndex ?? 0, 0, options.length - 1);
+
+    const background = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+    background.addColorStop(0, "#f8ddb4");
+    background.addColorStop(1, "#c8553d");
+    ctx.fillStyle = background;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawRoundedRect(120, 70, 720, 452, 24, "rgba(255, 250, 243, 0.97)", "#3d271d");
+    drawText("New Move", 160, 116, { font: "18px 'Press Start 2P'", color: "#b93c2f" });
+    drawText(`${creature.nickname} wants to learn ${newMoveName}.`, 160, 164, { font: "24px Outfit", color: "#2d1b14" });
+    drawText(moveSummary(moveId), 160, 196, {
+      font: "18px Outfit",
+      color: "#694435"
+    });
+    drawText("Choose a move to forget, or decline learning it.", 160, 230, { font: "18px Outfit", color: "#694435" });
+
+    options.forEach((option, index) => {
+      const selected = index === moveLearning.selectionIndex;
+      const y = 268 + index * 48;
+      drawRoundedRect(160, y, 640, 36, 12, selected ? "#c8553d" : "#fff4e6", "#3d271d");
+      drawText(option.label, 184, y + 24, {
+        font: "14px 'Press Start 2P'",
+        color: selected ? "#fff8f0" : "#2d1b14"
+      });
+    });
+
+    drawText("Enter: choose   Backspace: do not learn", 160, 492, { font: "16px Outfit", color: "#694435" });
+  }
+
   function drawBattle() {
     const battle = gameState.battle;
     const activeCreature = getActiveCreature();
@@ -749,7 +932,9 @@ export function createBattleController({
     beginPlayerTurn,
     beginEncounter,
     drawBattle,
+    drawMoveLearning,
     handleBattleNavigation,
+    handleMoveLearningNavigation,
     playerAction
   };
 }

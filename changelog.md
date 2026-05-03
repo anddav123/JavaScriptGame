@@ -2,6 +2,12 @@
 
 Project changes are recorded here by date. The README stays focused on what the project is and how to run it.
 
+## 2026-05-02
+
+- Added creature level-up learnsets with new moves unlocked between levels 5-100.
+- Added a four-move limit for player creatures, with a keyboard-controlled prompt to forget a move or decline the new move.
+- Persisted each player creature's known moves in JSON/database saves.
+
 ## 2026-05-01
 
 - Regenerated runtime PNG artwork from SVG sources for current canvas usage.

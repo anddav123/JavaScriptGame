@@ -11,7 +11,7 @@ import {
 import { createAscensionCutsceneController } from "./ascensionCutscene.js";
 import { createBattleController } from "./battle.js";
 import { cutscenes } from "./cutscenes.js";
-import { creatureTemplates } from "./creatures.js";
+import { creatureTemplates, defaultMovesForLevel, MAX_CREATURE_MOVES } from "./creatures.js";
 import { moveCatalog } from "./moves.js";
 import { createSaveController } from "./save.js";
 import { createSpriteController } from "./sprites.js";
@@ -24,6 +24,13 @@ const ctx = canvas.getContext("2d");
 const canvasFrame = document.getElementById("canvas-frame");
 const fullscreenToggle = document.getElementById("fullscreen-toggle");
 const START_MENU_BACKGROUND_SOURCES = ["assets/menu.png", "assets/menu.svg"];
+const START_MENU_BUTTONS = {
+  x: 154,
+  y: 364,
+  width: 272,
+  height: 36,
+  gap: 12
+};
 
 const VIEW_COLS = Math.floor(canvas.width / TILE_SIZE);
 const VIEW_ROWS = Math.floor(canvas.height / TILE_SIZE);
@@ -101,6 +108,7 @@ const gameState = {
   battle: null,
   cutscene: null,
   ascensionSequence: null,
+  moveLearning: null,
   pointerHotspot: null
 };
 
@@ -177,7 +185,16 @@ const battleController = createBattleController({
   drawText,
   drawHpBar,
   drawCreatureSprite,
-  startAscensionSequence
+  startAscensionSequence,
+  startMoveLearningSequence: (learnMoves, outcomeMessage, ascensionScenes = []) => {
+    gameState.moveLearning = {
+      queue: learnMoves,
+      outcomeMessage,
+      ascensionScenes,
+      selectionIndex: 0
+    };
+    gameState.scene = "moveLearning";
+  }
 });
 
 const saveController = createSaveController({
@@ -214,6 +231,9 @@ function createCreatureInstance(species, overrides = {}) {
     : defaultXp;
   const leveledMaxHp = template.maxHp + (level - CREATURE_MIN_LEVEL) * CREATURE_HP_PER_LEVEL;
   const maxHp = Number.isFinite(overrides.maxHp) ? Math.max(1, Math.round(overrides.maxHp)) : leveledMaxHp;
+  const moves = Array.isArray(overrides.moves)
+    ? [...new Set(overrides.moves)].filter((moveId) => moveCatalog[moveId]).slice(0, MAX_CREATURE_MOVES)
+    : defaultMovesForLevel(species, level);
   return {
     species: template.species,
     nickname: overrides.nickname || template.nickname,
@@ -226,7 +246,7 @@ function createCreatureInstance(species, overrides = {}) {
     maxHp,
     hp: Number.isFinite(overrides.hp) ? clamp(Math.round(overrides.hp), 0, maxHp) : maxHp,
     attackBoost: 0,
-    moves: [...template.moves],
+    moves: moves.length > 0 ? moves : [...template.moves].slice(0, MAX_CREATURE_MOVES),
     description: template.description,
     captured: overrides.captured ?? false
   };
@@ -302,17 +322,46 @@ function clamp(value, min, max) {
 }
 
 function menuOptions() {
-  return ["Party", "Save Game", "Close"];
+  return ["Party", "Save Game", "Export Save", "Import Save", "Close"];
 }
 
 function startMenuOptions() {
-  return ["Start Adventure", "Load Adventure"];
+  return saveController.isDatabaseAvailable()
+    ? ["Start Adventure", "Load Adventure", "Import JSON Save"]
+    : ["Start Local Adventure", "Import JSON Save", "Load Adventure"];
 }
 
 function beginNewGame() {
   gameState.scene = "world";
   setMessage(`Welcome to ${currentMap().name}.`);
   updateCamera();
+}
+
+async function selectStartMenuOption(index) {
+  const selected = startMenuOptions()[index];
+  if (selected === "Start Adventure" || selected === "Start Local Adventure") {
+    const accountCreated = await saveController.promptToCreateAccount();
+    if (accountCreated) {
+      storyController.startCutscene("intro");
+    }
+  } else if (selected === "Load Adventure") {
+    const loadResult = await saveController.promptToLoadGame();
+    if (loadResult === "fresh-start") {
+      storyController.startCutscene("intro");
+    }
+  } else if (selected === "Import JSON Save") {
+    await saveController.promptToImportSaveJson();
+  }
+}
+
+function startMenuOptionAtPoint(x, y) {
+  return startMenuOptions().findIndex((option, index) => {
+    const buttonY = START_MENU_BUTTONS.y + index * (START_MENU_BUTTONS.height + START_MENU_BUTTONS.gap);
+    return x >= START_MENU_BUTTONS.x
+      && x <= START_MENU_BUTTONS.x + START_MENU_BUTTONS.width
+      && y >= buttonY
+      && y <= buttonY + START_MENU_BUTTONS.height;
+  });
 }
 
 function handleStartMenuNavigation(key) {
@@ -323,12 +372,7 @@ function handleStartMenuNavigation(key) {
   } else if (key === "ArrowDown" || key === "s") {
     gameState.startMenu.index = (gameState.startMenu.index + 1) % options.length;
   } else if (key === "Enter") {
-    const selected = options[gameState.startMenu.index];
-    if (selected === "Start Adventure") {
-      storyController.startCutscene("intro");
-    } else if (selected === "Load Adventure") {
-      saveController.promptToLoadGame();
-    } 
+    selectStartMenuOption(gameState.startMenu.index);
   }
 }
 
@@ -381,7 +425,11 @@ async function handleMenuNavigation(key) {
         gameState.menu.partyIndex = gameState.player.activeIndex;
         setMessage("Browsing your captured creatures.");
       } else if (selected === "Save Game") {
+        await saveController.saveGame();
+      } else if (selected === "Export Save") {
         await saveController.exportSaveJson();
+      } else if (selected === "Import Save") {
+        await saveController.promptToImportSaveJson();
       } else {
         closeMenu();
       }
@@ -648,25 +696,28 @@ function drawMenuOverlay() {
 
   if (gameState.menu.mode === "main") {
     const options = menuOptions();
-    drawRoundedRect(canvas.width - 250, 28, 210, 250, 18, "rgba(255, 250, 243, 0.98)", "#3d271d");
+    const optionGap = 46;
+    const menuHeight = 94 + options.length * optionGap;
+    drawRoundedRect(canvas.width - 250, 28, 210, menuHeight, 18, "rgba(255, 250, 243, 0.98)", "#3d271d");
     drawText("Menu", canvas.width - 220, 58, { font: "14px 'Press Start 2P'", color: "#b93c2f" });
     options.forEach((option, index) => {
       const selected = index === gameState.menu.mainIndex;
+      const optionY = 78 + index * optionGap;
       drawRoundedRect(
         canvas.width - 226,
-        78 + index * 58,
+        optionY,
         162,
-        44,
+        36,
         12,
         selected ? "#c8553d" : "#fff4e6",
         "#3d271d"
       );
-      drawText(option, canvas.width - 198, 107 + index * 58, {
-        font: "12px 'Press Start 2P'",
+      drawText(option, canvas.width - 198, optionY + 24, {
+        font: "10px 'Press Start 2P'",
         color: selected ? "#fff8f0" : "#2d1b14"
       });
     });
-    drawText("Enter: choose", canvas.width - 220, 260, { font: "14px Outfit", color: "#694435" });
+    drawText("Enter: choose", canvas.width - 220, menuHeight + 2, { font: "14px Outfit", color: "#694435" });
     return;
   }
 
@@ -740,14 +791,15 @@ function drawStartMenu() {
     });
   }
 
-  drawRoundedRect(126, 314, 330, 176, 20, "rgba(255, 248, 238, 0.94)", "#1c2634");
-  drawText("Start Menu", 166, 350, { font: "15px 'Press Start 2P'", color: "#1c2634" });
+  drawRoundedRect(126, 314, 330, 190, 20, "rgba(255, 248, 238, 0.94)", "#1c2634");
+  drawText("Start Menu", 166, 348, { font: "15px 'Press Start 2P'", color: "#1c2634" });
 
   startMenuOptions().forEach((option, index) => {
     const selected = index === gameState.startMenu.index;
-    drawRoundedRect(154, 374 + index * 52, 272, 40, 14, selected ? "#f9d85d" : "#fff3e2", "#1c2634");
-    drawText(option, 182, 400 + index * 52, {
-      font: "12px 'Press Start 2P'",
+    const buttonY = START_MENU_BUTTONS.y + index * (START_MENU_BUTTONS.height + START_MENU_BUTTONS.gap);
+    drawRoundedRect(START_MENU_BUTTONS.x, buttonY, START_MENU_BUTTONS.width, START_MENU_BUTTONS.height, 14, selected ? "#f9d85d" : "#fff3e2", "#1c2634");
+    drawText(option, 182, buttonY + 24, {
+      font: "10px 'Press Start 2P'",
       color: selected ? "#1c2634" : "#2d1b14"
     });
   });
@@ -762,7 +814,7 @@ function drawStartMenu() {
   drawText("F", 800, 468, { font: "20px Outfit", color: "#2d1b14", align: "right" });
 
   drawRoundedRect(104, 522, 752, 34, 14, "rgba(28, 38, 52, 0.58)");
-  drawText("Start fresh or load a JSON save to continue.", 480, 544, {
+  drawText("Start fresh, load from database, or import a JSON backup.", 480, 544, {
     font: "18px Outfit",
     color: "#fff8f0",
     align: "center"
@@ -778,6 +830,8 @@ function render() {
     storyController.drawCutscene();
   } else if (gameState.scene === "ascension") {
     drawAscensionScene();
+  } else if (gameState.scene === "moveLearning") {
+    battleController.drawMoveLearning();
   } else if (gameState.scene === "encounter") {
     drawEncounterTransition();
   } else if (gameState.scene === "battle") {
@@ -828,6 +882,14 @@ window.addEventListener("keydown", (event) => {
     return;
   }
 
+  if (gameState.scene === "moveLearning") {
+    if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
+      battleController.handleMoveLearningNavigation(key);
+      event.preventDefault();
+    }
+    return;
+  }
+
   if (key === "Enter" && gameState.scene === "world") {
     openMenu();
     event.preventDefault();
@@ -863,12 +925,24 @@ window.addEventListener("keydown", (event) => {
   }
 });
 
-window.addEventListener("mousemove", (event) => {
+function canvasPointFromEvent(event) {
   const rect = canvas.getBoundingClientRect();
-  mouse = {
+  return {
     x: ((event.clientX - rect.left) / rect.width) * canvas.width,
     y: ((event.clientY - rect.top) / rect.height) * canvas.height
   };
+}
+
+window.addEventListener("mousemove", (event) => {
+  mouse = canvasPointFromEvent(event);
+
+  if (gameState.scene === "start") {
+    const hoveredStartMenuOption = startMenuOptionAtPoint(mouse.x, mouse.y);
+    if (hoveredStartMenuOption >= 0) {
+      gameState.startMenu.index = hoveredStartMenuOption;
+    }
+    return;
+  }
 
   if (gameState.scene !== "battle" || !gameState.battle) return;
 
@@ -884,7 +958,18 @@ window.addEventListener("mousemove", (event) => {
   }
 });
 
-canvas.addEventListener("click", () => {
+canvas.addEventListener("click", (event) => {
+  mouse = canvasPointFromEvent(event);
+
+  if (gameState.scene === "start") {
+    const clickedStartMenuOption = startMenuOptionAtPoint(mouse.x, mouse.y);
+    if (clickedStartMenuOption >= 0) {
+      gameState.startMenu.index = clickedStartMenuOption;
+      selectStartMenuOption(clickedStartMenuOption);
+    }
+    return;
+  }
+
   if (gameState.scene !== "battle" || !gameState.pointerHotspot || gameState.battle.turn !== "player") {
     return;
   }
@@ -901,5 +986,10 @@ document.addEventListener("fullscreenchange", () => {
 });
 
 updateCamera();
+saveController.canUseDatabaseSaves().then((available) => {
+  setMessage(available
+    ? "Database saves available. Start or load your adventure."
+    : "Static mode: use local adventure and JSON save import/export.");
+});
 setInterval(handleWorldInput, 250);
 render();

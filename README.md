@@ -19,6 +19,15 @@ npx serve .
 
 Opening `index.html` directly may fail in some browsers because the game uses JavaScript modules.
 
+Static mode remains supported:
+
+- `Start Local Adventure` starts a game without an account
+- `Import JSON Save` loads an exported JSON save
+- in-game `Export Save` remains available for backups
+- database save/load options are disabled or redirected when the PHP API is unavailable
+
+For local PHP/MySQL account-save development, see `README.dev.md`.
+
 ## Controls
 
 - Start menu navigation: `W` / `S` or arrow keys, confirm with `Enter`
@@ -93,4 +102,4 @@ Opening `index.html` directly may fail in some browsers because the game uses Ja
 - Add NPCs, quests, and interior maps
 - Add move learning by level and richer creature move pools
 - Add party swapping during battle and status effects
-- Save progress with `localStorage`
+- Wire account-based MySQL saves into richer in-game UI screens instead of browser prompts
