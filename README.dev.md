@@ -28,6 +28,11 @@ Database connection details for local development:
 - User: `orb_bound_user`
 - Password: `orb_bound_password`
 
+Session cookie options:
+
+- `TRUST_PROXY_HEADERS=false` by default. Set to `true` only when a trusted reverse proxy overwrites forwarded headers.
+- `FORCE_SECURE_COOKIES=false` by default. Set to `true` in HTTPS production so session cookies are always marked `Secure`.
+
 Stop the stack:
 
 ```bash

@@ -2,9 +2,28 @@
 
 declare(strict_types=1);
 
+const MAX_JSON_BODY_BYTES = 262144; // 256 KB request limit.
+
+ini_set('session.use_strict_mode', '1');
+
+function env_bool(string $name): bool
+{
+    return filter_var(getenv($name) ?: 'false', FILTER_VALIDATE_BOOLEAN);
+}
+
+$trustProxyHeaders = env_bool('TRUST_PROXY_HEADERS');
+$forceSecureCookies = env_bool('FORCE_SECURE_COOKIES');
+$isSecureRequest = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+
+if ($trustProxyHeaders) {
+    $forwardedProto = strtolower(trim(explode(',', $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')[0]));
+    $isSecureRequest = $isSecureRequest || $forwardedProto === 'https';
+}
+
 session_start([
     'cookie_httponly' => true,
     'cookie_samesite' => 'Lax',
+    'cookie_secure' => $forceSecureCookies || $isSecureRequest,
 ]);
 
 header('Content-Type: application/json');
@@ -18,9 +37,18 @@ function json_response(array $payload, int $statusCode = 200): void
 
 function read_json_body(): array
 {
+    $contentLength = isset($_SERVER['CONTENT_LENGTH']) ? (int) $_SERVER['CONTENT_LENGTH'] : 0;
+    if ($contentLength > MAX_JSON_BODY_BYTES) {
+        json_response(['ok' => false, 'error' => 'Request body is too large.'], 413);
+    }
+
     $body = file_get_contents('php://input');
     if ($body === false || trim($body) === '') {
         return [];
+    }
+
+    if (strlen($body) > MAX_JSON_BODY_BYTES) {
+        json_response(['ok' => false, 'error' => 'Request body is too large.'], 413);
     }
 
     $data = json_decode($body, true);

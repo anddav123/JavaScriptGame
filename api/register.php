@@ -20,6 +20,7 @@ $passwordHash = password_hash($password, PASSWORD_DEFAULT);
 $insert = $pdo->prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)');
 $insert->execute([$username, $passwordHash]);
 
+session_regenerate_id(true);
 $_SESSION['user_id'] = (int) $pdo->lastInsertId();
 $_SESSION['username'] = $username;
 
