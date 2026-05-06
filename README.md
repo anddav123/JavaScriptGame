@@ -99,7 +99,6 @@ For local PHP/MySQL account-save development, see `README.dev.md`.
 
 ## Next ideas
 
-- Add NPCs, quests, and interior maps
-- Add move learning by level and richer creature move pools
+- Add NPCs, quests, and story line
 - Add party swapping during battle and status effects
-- Wire account-based MySQL saves into richer in-game UI screens instead of browser prompts
+- Add new map tile types (Water, Sand, Snow...)
