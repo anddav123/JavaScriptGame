@@ -281,7 +281,8 @@ export function createSaveController({
     return {
       saveVersion: SAVE_VERSION,
       world: {
-        currentMapId: gameState.world.currentMapId
+        currentMapId: gameState.world.currentMapId,
+        camp: gameState.world.camp ? { ...gameState.world.camp } : null
       },
       player: {
         x: gameState.player.x,
@@ -384,6 +385,24 @@ export function createSaveController({
       throw new Error("Save data references an unknown map.");
     }
 
+    const parsedCamp = parsedSave.world?.camp;
+    const camp = parsedCamp && typeof parsedCamp === "object"
+      ? {
+          mapId: parsedCamp.mapId,
+          x: parsedCamp.x,
+          y: parsedCamp.y
+        }
+      : null;
+    if (camp) {
+      if (!isValidMapId(camp.mapId) || !Number.isInteger(camp.x) || !Number.isInteger(camp.y)) {
+        throw new Error("Save data includes an invalid campsite.");
+      }
+      const campMap = worldMaps[camp.mapId];
+      if (camp.y < 0 || camp.y >= campMap.terrain.length || camp.x < 0 || camp.x >= campMap.terrain[0].length || campMap.terrain[camp.y][camp.x] !== "G") {
+        throw new Error("Save data includes an invalid campsite location.");
+      }
+    }
+
     if (!Array.isArray(parsedSave.player?.party) || parsedSave.player.party.length === 0) {
       throw new Error("Save data must include at least one party member.");
     }
@@ -418,9 +437,12 @@ export function createSaveController({
     }
 
     const previousMapId = gameState.world.currentMapId;
+    const previousCamp = gameState.world.camp;
     gameState.world.currentMapId = parsedSave.world.currentMapId;
+    gameState.world.camp = camp;
     if (!isWalkable(nextPlayer.x, nextPlayer.y)) {
       gameState.world.currentMapId = previousMapId;
+      gameState.world.camp = previousCamp;
       throw new Error("Save position is blocked on that map.");
     }
 

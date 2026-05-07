@@ -9,6 +9,7 @@ export function createStoryController({
   onComplete
 }) {
   const imageCache = {};
+  let currentOnComplete = null;
 
   function imageFor(src, fallbackSrc = null) {
     const cacheKey = fallbackSrc ? `${src}|${fallbackSrc}` : src;
@@ -74,7 +75,8 @@ export function createStoryController({
     finishCutscene();
   }
 
-  function startCutscene(id) {
+  function startCutscene(id, options = {}) {
+    currentOnComplete = typeof options.onComplete === "function" ? options.onComplete : null;
     gameState.scene = "cutscene";
     gameState.cutscene = {
       id,
@@ -94,8 +96,12 @@ export function createStoryController({
   }
 
   function finishCutscene() {
+    const completeCutscene = currentOnComplete || onComplete;
+    currentOnComplete = null;
     gameState.cutscene = null;
-    onComplete();
+    if (typeof completeCutscene === "function") {
+      completeCutscene();
+    }
   }
 
   function drawCoverImage(image) {

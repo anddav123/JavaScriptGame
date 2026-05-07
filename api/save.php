@@ -31,6 +31,26 @@ function is_valid_short_text(mixed $value, int $maxLength): bool
     return is_string($value) && trim($value) !== '' && strlen($value) <= $maxLength;
 }
 
+function is_valid_map_id(mixed $value): bool
+{
+    return is_string($value)
+        && strlen($value) <= 64
+        && preg_match('/\A[a-z][A-Za-z0-9_-]*\z/', $value) === 1;
+}
+
+function validate_camp_save(mixed $camp): bool
+{
+    if ($camp === null) return true;
+    if (!is_array($camp)) return false;
+
+    if (!has_only_keys($camp, ['mapId', 'x', 'y'])) return false;
+    if (!is_valid_map_id($camp['mapId'] ?? null)) return false;
+    if (!is_int_between($camp['x'] ?? null, 0, 500)) return false;
+    if (!is_int_between($camp['y'] ?? null, 0, 500)) return false;
+
+    return true;
+}
+
 function validate_creature_save(mixed $creature): bool
 {
     if (!is_array($creature)) return false;
@@ -76,8 +96,9 @@ function validate_game_save(mixed $gameState): bool
     if (($gameState['saveVersion'] ?? null) !== SAVE_VERSION) return false;
 
     $world = $gameState['world'] ?? null;
-    if (!is_array($world) || !has_only_keys($world, ['currentMapId'])) return false;
-    if (!is_valid_short_text($world['currentMapId'] ?? null, 60)) return false;
+    if (!is_array($world) || !has_only_keys($world, ['currentMapId', 'camp'])) return false;
+    if (!is_valid_map_id($world['currentMapId'] ?? null)) return false;
+    if (!validate_camp_save($world['camp'] ?? null)) return false;
 
     $player = $gameState['player'] ?? null;
     if (!is_array($player)) return false;

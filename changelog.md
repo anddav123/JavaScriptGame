@@ -2,6 +2,16 @@
 
 Project changes are recorded here by date. The README stays focused on what the project is and how to run it.
 
+## 2026-05-07
+
+- Added campsite support with party recovery and save/import persistence.
+- Added building rendering, door interactions, and interior maps for cottages and the Ranger Field Station.
+- Added NPC rendering with sprite support, dialogue, and configurable patrols including horizontal and circular routes.
+- Added a party-fainted cutscene before returning the player to camp or the adventure start.
+- Made building signs data-driven with a `sign` field and added the Ranger Field Station sign.
+- Updated interior wall tiles to render as plain light grey squares.
+- Loosened server-side map ID validation to use a safe ID pattern instead of a duplicated hardcoded map list.
+
 ## 2026-05-02
 
 - Added creature level-up learnsets with new moves unlocked between levels 5-100.

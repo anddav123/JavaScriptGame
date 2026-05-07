@@ -32,7 +32,8 @@ export function createBattleController({
   drawHpBar,
   drawCreatureSprite,
   startAscensionSequence,
-  startMoveLearningSequence
+  startMoveLearningSequence,
+  onPartyFainted
 }) {
   function captureCreature(species) {
     const enemy = gameState.battle?.enemy;
@@ -464,8 +465,42 @@ export function createBattleController({
           return;
         }
       } else if (playerFainted) {
-        activeCreature.hp = activeCreature.maxHp;
-        outcomeMessage = `${activeCreature.nickname} fainted, then recovered back at camp.`;
+        const nextCreatureIndex = gameState.player.party.findIndex((_, offset) => {
+          if (offset === 0) return false;
+          const index = (gameState.player.activeIndex + offset) % gameState.player.party.length;
+          return gameState.player.party[index].hp > 0;
+        });
+
+        if (nextCreatureIndex >= 0) {
+          const faintedName = activeCreature.nickname;
+          gameState.player.activeIndex = (gameState.player.activeIndex + nextCreatureIndex) % gameState.player.party.length;
+          const nextCreature = getActiveCreature();
+          battle.resolving = false;
+          writeBattleLog(`${nextCreature.nickname} stepped in as lead creature.`);
+          setMessage(`${faintedName} fainted. ${nextCreature.nickname} is now leading your party.`);
+          beginPlayerTurn();
+          return;
+        }
+
+        const recoveryPoint = gameState.world.camp || gameState.world.start || { mapId: "sunmeadow", x: 1, y: 1 };
+        outcomeMessage = gameState.world.camp
+          ? `Your party fainted, then fully recovered back at camp.`
+          : `Your party fainted, then fully recovered back at the start of your adventure.`;
+        gameState.battle = null;
+
+        if (typeof onPartyFainted === "function") {
+          onPartyFainted({ recoveryPoint, outcomeMessage });
+          return;
+        }
+
+        for (const creature of gameState.player.party) {
+          creature.hp = creature.maxHp;
+        }
+        gameState.world.currentMapId = recoveryPoint.mapId;
+        gameState.player.x = recoveryPoint.x;
+        gameState.player.y = recoveryPoint.y;
+        gameState.player.facing = "down";
+        gameState.player.walkFrame = 0;
       }
 
       gameState.battle = null;

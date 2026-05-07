@@ -395,6 +395,12 @@ export function createTileRenderer({ ctx }) {
     const grassTheme = grassTileCanvases[mapType] ? mapType : "meadow";
 
     if (tile === "W") {
+      if (mapType === "interior") {
+        ctx.fillStyle = "#fffcdc";
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        return;
+      }
+
       const wallVariant = tileVariant(mapX, mapY, 19, 23, wallTileCanvases.length);
       ctx.drawImage(wallTileCanvases[wallVariant], px, py);
       return;

@@ -17,8 +17,8 @@ export const worldMaps = {
       "WTTTTTTTTTTTTGGGGGGGGGTTTTGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
       "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTTTTTW",
       "WGGGGTTTGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTTRRRRRRTTTTTTTTTTTTTTTTTTTTW",
-      "WGGGGTTTGGGGGGGGGGGGGGGGRRGGGGGWTTTTTTTTTTTTTRRRRRRTTTTTTTTTTTTTTTTTTTTW",
-      "WGGGGGGGGGGGGGGGGGGGGGGGRRGGGGGWTTTTTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTW",
+      "WGGGGTTTGGGGGGGGGGGGGGGGRRRGGGGWTTTTTTTTTTTTTRRRRRRTTTTTTTTTTTTTTTTTTTTW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGRRRGGGGWTTTTTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTW",
       "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWTTTTTTTTTTTTTTTTRRRTTTTTTTTTTTTTTTTTTTTW",
       "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWWWWWWWWWWWWWWWWWRRRWWWWWWWWWWWWWWWWWWWWW",
       "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
@@ -33,6 +33,91 @@ export const worldMaps = {
       { x: 21, y: 11, text: "Player tip: press Enter to open your menu." },
       { x: 25, y: 4, text: "A cave mouth waits to the east. Stay alert." },
       { x: 47, y: 14, text: "Welcome to New Town." }
+    ],
+    buildings: [
+      {
+        x: 24,
+        y: 8,
+        width: 3,
+        height: 3,
+        door: { x: 25, y: 10 },
+        name: "Wayfarer Cottage",
+        text: "Wayfarer Cottage: a tiny resting place tucked beside the meadow path.",
+        wallColor: "#ead09a",
+        trimColor: "#765337",
+        roofColor: "#a65c3b",
+        roofTrimColor: "#663321"
+      },
+      {
+        x: 54,
+        y: 14,
+        width: 4,
+        height: 3,
+        door: { x: 56, y: 16 },
+        name: "Sunmeadow Field Station",
+        sign: "Range",
+        text: "Sunmeadow Field Station: a cosy outpost for trainers exploring the meadow."
+      },
+      {
+        x: 42,
+        y: 15,
+        width: 3,
+        height: 3,
+        door: { x: 43, y: 17 },
+        name: "New Town Cottage",
+        text: "New Town Cottage: warm lamplight glows behind the curtains.",
+        lockedMessage: "The cottage door is locked.",
+        wallColor: "#e8c47f",
+        trimColor: "#7a5434",
+        roofColor: "#7f4f9f",
+        roofTrimColor: "#4d2c63"
+      },
+      {
+        x: 62,
+        y: 14,
+        width: 3,
+        height: 3,
+        door: { x: 63, y: 16 },
+        name: "Supply Shed",
+        text: "Supply Shed: crates of ranger tools are stacked neatly inside.",
+        lockedMessage: "The supply shed is locked.",
+        wallColor: "#d8aa6a",
+        trimColor: "#6d4b2f",
+        roofColor: "#3d8f6f",
+        roofTrimColor: "#245441"
+      },
+      {
+        x: 68,
+        y: 15,
+        width: 2,
+        height: 2,
+        door: { x: 68, y: 16 },
+        name: "Tiny Storehouse",
+        text: "Tiny Storehouse: a compact little building with a sturdy lock.",
+        lockedMessage: "The storehouse door is locked.",
+        wallColor: "#f0d7a6",
+        trimColor: "#725135",
+        roofColor: "#b95e3c",
+        roofTrimColor: "#6d2d24"
+      }
+    ],
+    npcs: [
+      {
+        x: 50,
+        y: 14,
+        name: "Meadow Ranger",
+        spritePath: "assets/npc/ranger-sprite.png",
+        patrol: { shape: "circle", radius: 1, intervalMs: 700 },
+        dialogue: "Keep an eye on the tall grass. New creature families have been spotted nearby."
+      },
+      {
+        x: 62,
+        y: 17,
+        name: "Meadow Ranger Trainee",
+        spritePath: "assets/npc/ranger-sprite.png",
+        patrol: { axis: "x", steps: 3, intervalMs: 700 },
+        dialogue: "Oh no I'm late for my first day of patrol."
+      }
     ],
     triggers: [
       {
@@ -54,6 +139,15 @@ export const worldMaps = {
         message: "You enter the wayfarer's cottage."
       },
       {
+        x: 56,
+        y: 16,
+        kind: "door",
+        targetMap: "rangerFieldStation",
+        targetX: 5,
+        targetY: 6,
+        message: "You enter the Ranger Field Station."
+      },
+      {
         x: 68,
         y: 2,
         kind: "cave",
@@ -61,6 +155,37 @@ export const worldMaps = {
         targetX: 44,
         targetY: 13,
         message: "You step into Ember Cave."
+      }
+    ]
+  },
+  rangerFieldStation: {
+    name: "Ranger Field Station",
+    mapType: "interior",
+    palette: { top: "#000000", bottom: "#020202" },
+    encounterRate: -1,
+    wildCreatures: [],
+    terrain: [
+      "WWWWWWWWWW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WWWWWRWWWW"
+    ],
+    signs: [
+      { x: 5, y: 2, text: "Ranger log: creature activity around Sunmeadow is increasing." }
+    ],
+    triggers: [
+      {
+        x: 5,
+        y: 7,
+        kind: "door-exit",
+        targetMap: "sunmeadow",
+        targetX: 56,
+        targetY: 17,
+        message: "You step back into Sunmeadow."
       }
     ]
   },
@@ -126,7 +251,7 @@ export const worldMaps = {
       "WRRRRRRRRW",
       "WRRRRRRRRW",
       "WRRRRRRRRW",
-      "WWWWWWWWWW"
+      "WWWWRWWWWW"
     ],
     signs: [
       { x: 5, y: 2, text: "A note reads: rest, explore, and return stronger." }
@@ -134,7 +259,7 @@ export const worldMaps = {
     triggers: [
       {
         x: 4,
-        y: 6,
+        y: 7,
         kind: "door-exit",
         targetMap: "sunmeadow",
         targetX: 25,

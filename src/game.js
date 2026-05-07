@@ -37,6 +37,7 @@ const VIEW_ROWS = Math.floor(canvas.height / TILE_SIZE);
 
 const keys = new Set();
 let mouse = { x: 0, y: 0 };
+const npcSpriteCache = new Map();
 
 const startMenuBackground = {
   image: new Image(),
@@ -86,7 +87,9 @@ const gameState = {
     partyIndex: 0
   },
   world: {
-    currentMapId: "sunmeadow"
+    currentMapId: "sunmeadow",
+    camp: null,
+    start: { mapId: "sunmeadow", x: 1, y: 1 }
   },
   player: {
     x: 1,
@@ -125,6 +128,7 @@ const {
   currentMap,
   currentMapCols,
   currentMapRows,
+  interactFacing,
   isWalkable,
   movePlayer,
   tileAt,
@@ -194,7 +198,8 @@ const battleController = createBattleController({
       selectionIndex: 0
     };
     gameState.scene = "moveLearning";
-  }
+  },
+  onPartyFainted: startPartyFaintedCutscene
 });
 
 const saveController = createSaveController({
@@ -322,7 +327,23 @@ function clamp(value, min, max) {
 }
 
 function menuOptions() {
-  return ["Party", "Save Game", "Export Save", "Import Save", "Close"];
+  return ["Party", "Make Camp", "Save Game", "Export Save", "Import Save", "Close"];
+}
+
+function makeCamp() {
+  if (tileAt(gameState.player.x, gameState.player.y) !== "G") {
+    setMessage("Not a good spot to make camp.");
+    closeMenu();
+    return;
+  }
+
+  gameState.world.camp = {
+    mapId: gameState.world.currentMapId,
+    x: gameState.player.x,
+    y: gameState.player.y
+  };
+  setMessage("Camp set. If your creature faints, you will return here.");
+  closeMenu();
 }
 
 function startMenuOptions() {
@@ -335,6 +356,35 @@ function beginNewGame() {
   gameState.scene = "world";
   setMessage(`Welcome to ${currentMap().name}.`);
   updateCamera();
+}
+
+function recoverPartyAfterFainting({ recoveryPoint, outcomeMessage }) {
+  for (const creature of gameState.player.party) {
+    creature.hp = creature.maxHp;
+  }
+
+  gameState.world.currentMapId = recoveryPoint.mapId;
+  gameState.player.x = recoveryPoint.x;
+  gameState.player.y = recoveryPoint.y;
+  gameState.player.facing = "down";
+  gameState.player.walkFrame = 0;
+  gameState.player.lastMovedAt = 0;
+  gameState.scene = "world";
+  gameState.battle = null;
+  gameState.pointerHotspot = null;
+  resetEncounterTransition();
+  updateCamera();
+
+  if (outcomeMessage) {
+    setMessage(outcomeMessage);
+  }
+}
+
+function startPartyFaintedCutscene({ recoveryPoint, outcomeMessage }) {
+  keys.clear();
+  storyController.startCutscene("partyFainted", {
+    onComplete: () => recoverPartyAfterFainting({ recoveryPoint, outcomeMessage })
+  });
 }
 
 async function selectStartMenuOption(index) {
@@ -424,6 +474,8 @@ async function handleMenuNavigation(key) {
         gameState.menu.mode = "party";
         gameState.menu.partyIndex = gameState.player.activeIndex;
         setMessage("Browsing your captured creatures.");
+      } else if (selected === "Make Camp") {
+        makeCamp();
       } else if (selected === "Save Game") {
         await saveController.saveGame();
       } else if (selected === "Export Save") {
@@ -502,20 +554,460 @@ function drawTrigger(trigger) {
   }
 
   if (trigger.kind.startsWith("cave")) {
-    drawRoundedRect(px + 6, py + 8, TILE_SIZE - 12, TILE_SIZE - 12, 12, "#4b3a3d", "#c6a56b");
-    drawRoundedRect(px + 14, py + 18, TILE_SIZE - 28, TILE_SIZE - 22, 8, "#181314");
+    ctx.fillStyle = "rgba(24, 19, 20, 0.24)";
+    ctx.beginPath();
+    ctx.ellipse(px + 24, py + 40, 21, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = "#5f6260";
+    ctx.beginPath();
+    ctx.moveTo(px + 5, py + 40);
+    ctx.lineTo(px + 9, py + 24);
+    ctx.quadraticCurveTo(px + 12, py + 9, px + 26, py + 7);
+    ctx.quadraticCurveTo(px + 40, py + 10, px + 43, py + 25);
+    ctx.lineTo(px + 46, py + 40);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#363a3d";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = "#2d3134";
+    ctx.beginPath();
+    ctx.moveTo(px + 14, py + 40);
+    ctx.lineTo(px + 16, py + 27);
+    ctx.quadraticCurveTo(px + 24, py + 14, px + 33, py + 27);
+    ctx.lineTo(px + 36, py + 40);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = "#111314";
+    ctx.beginPath();
+    ctx.moveTo(px + 18, py + 40);
+    ctx.lineTo(px + 19, py + 30);
+    ctx.quadraticCurveTo(px + 24, py + 22, px + 30, py + 30);
+    ctx.lineTo(px + 32, py + 40);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(210, 219, 198, 0.2)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px + 12, py + 24);
+    ctx.lineTo(px + 20, py + 16);
+    ctx.moveTo(px + 34, py + 17);
+    ctx.lineTo(px + 39, py + 28);
+    ctx.stroke();
+
+    drawRoundedRect(px + 8, py + 38, 36, 5, 0, "#3f443f");
   } else {
-    drawRoundedRect(px + 10, py + 6, TILE_SIZE - 20, TILE_SIZE - 12, 8, "#d9ba84", "#6d4b2f");
-    drawRoundedRect(px + 18, py + 18, TILE_SIZE - 36, TILE_SIZE - 24, 4, "#845535");
+    drawRoundedRect(px + 8, py + 29, TILE_SIZE - 16, 13, 0, "#8b5f3d", "#4e2d1f");
+    drawRoundedRect(px + 11, py + 32, TILE_SIZE - 22, 3, 0, "rgba(255, 221, 166, 0.22)");
+    drawRoundedRect(px + 11, py + 38, TILE_SIZE - 22, 2, 0, "rgba(55, 32, 20, 0.28)");
+
+    ctx.strokeStyle = "rgba(55, 32, 20, 0.35)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px + 15, py + 35);
+    ctx.lineTo(px + TILE_SIZE - 15, py + 35);
+    ctx.moveTo(px + 15, py + 39);
+    ctx.lineTo(px + TILE_SIZE - 15, py + 39);
+    ctx.stroke();
   }
 }
 
 function drawSign(sign) {
-  const px = worldToScreenX(sign.x) + 12;
-  const py = worldToScreenY(sign.y) + 10;
-  if (px + 24 < 0 || py + 28 < 0 || px > canvas.width || py > canvas.height) return;
-  drawRoundedRect(px, py, 24, 28, 8, "#fff1cd", "#815b2e");
-  drawText("!", px + 12, py + 19, { align: "center", font: "18px 'Press Start 2P'", color: "#b93c2f" });
+  const px = worldToScreenX(sign.x);
+  const py = worldToScreenY(sign.y);
+  if (px + TILE_SIZE < 0 || py + TILE_SIZE < 0 || px > canvas.width || py > canvas.height) return;
+
+  drawRoundedRect(px + 22, py + 24, 5, 21, 0, "#6d4b2f", "#4e2d1f");
+  drawRoundedRect(px + 10, py + 10, 28, 18, 0, "#b8834f", "#5b3723");
+  drawRoundedRect(px + 13, py + 13, 22, 3, 0, "rgba(255, 222, 164, 0.3)");
+  drawRoundedRect(px + 13, py + 23, 22, 3, 0, "rgba(73, 43, 25, 0.22)");
+
+  ctx.strokeStyle = "rgba(73, 43, 25, 0.34)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(px + 16, py + 19);
+  ctx.lineTo(px + 32, py + 19);
+  ctx.stroke();
+
+  drawText("!", px + 24, py + 24, { align: "center", font: "12px 'Press Start 2P'", color: "#fff1cd" });
+}
+
+function drawCamp(camp) {
+  if (!camp || camp.mapId !== gameState.world.currentMapId) return;
+
+  const px = worldToScreenX(camp.x);
+  const py = worldToScreenY(camp.y);
+  if (px + TILE_SIZE < 0 || py + TILE_SIZE < 0 || px > canvas.width || py > canvas.height) return;
+
+  ctx.fillStyle = "rgba(45, 27, 20, 0.25)";
+  ctx.beginPath();
+  ctx.ellipse(px + 24, py + 40, 22, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#6d4b2f";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(px + 8, py + 40);
+  ctx.lineTo(px + 24, py + 10);
+  ctx.lineTo(px + 40, py + 40);
+  ctx.moveTo(px + 24, py + 10);
+  ctx.lineTo(px + 24, py + 42);
+  ctx.stroke();
+
+  ctx.fillStyle = "#d96459";
+  ctx.beginPath();
+  ctx.moveTo(px + 7, py + 39);
+  ctx.quadraticCurveTo(px + 14, py + 24, px + 24, py + 11);
+  ctx.lineTo(px + 24, py + 40);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#6d2d24";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = "#f3a65a";
+  ctx.beginPath();
+  ctx.moveTo(px + 24, py + 11);
+  ctx.quadraticCurveTo(px + 35, py + 24, px + 41, py + 39);
+  ctx.lineTo(px + 24, py + 40);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#8f332b";
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.fillStyle = "#4e2d1f";
+  ctx.beginPath();
+  ctx.moveTo(px + 21, py + 40);
+  ctx.lineTo(px + 24, py + 25);
+  ctx.lineTo(px + 30, py + 40);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.strokeStyle = "rgba(255, 241, 205, 0.45)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(px + 13, py + 35);
+  ctx.quadraticCurveTo(px + 17, py + 25, px + 23, py + 16);
+  ctx.moveTo(px + 31, py + 25);
+  ctx.quadraticCurveTo(px + 35, py + 31, px + 38, py + 37);
+  ctx.stroke();
+
+  drawRoundedRect(px + 5, py + 39, 38, 4, 0, "#6d4b2f");
+  drawRoundedRect(px + 9, py + 42, 5, 3, 0, "#c8553d");
+  drawRoundedRect(px + 34, py + 42, 5, 3, 0, "#c8553d");
+}
+
+function drawBuilding(building) {
+  const px = worldToScreenX(building.x);
+  const py = worldToScreenY(building.y);
+  const width = building.width * TILE_SIZE;
+  const height = building.height * TILE_SIZE;
+  const doorX = building.door ? worldToScreenX(building.door.x) + 11 : px + width / 2 - 13;
+  const doorY = building.door ? worldToScreenY(building.door.y) + 6 : py + height - 48;
+  const wallColor = building.wallColor || "#f3d49a";
+  const trimColor = building.trimColor || "#6d4b2f";
+  const roofColor = building.roofColor || "#b93c2f";
+  const roofTrimColor = building.roofTrimColor || "#6d2d24";
+
+  if (px + width < 0 || py + height < 0 || px > canvas.width || py > canvas.height) return;
+
+  drawRoundedRect(px + 10, py + height - 10, width - 20, 8, 0, "rgba(45, 27, 20, 0.22)");
+  drawRoundedRect(px + 6, py + 22, width - 12, height - 28, 0, wallColor, trimColor);
+
+  ctx.strokeStyle = "rgba(109, 75, 47, 0.28)";
+  ctx.lineWidth = 2;
+  for (let y = py + 38; y < py + height - 14; y += 14) {
+    ctx.beginPath();
+    ctx.moveTo(px + 9, y);
+    ctx.lineTo(px + width - 9, y + ((y / 14) % 2 === 0 ? 1 : -1));
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "rgba(255, 244, 198, 0.28)";
+  ctx.fillRect(px + 13, py + 28, width - 26, 7);
+  ctx.fillStyle = "rgba(92, 55, 35, 0.14)";
+  ctx.fillRect(px + 9, py + height - 24, width - 18, 10);
+
+  drawRoundedRect(px + 6, py + 6, width - 12, 34, 0, roofColor, roofTrimColor);
+
+  ctx.strokeStyle = "rgba(255, 215, 141, 0.34)";
+  ctx.lineWidth = 3;
+  for (let x = px + 14; x < px + width - 18; x += 24) {
+    ctx.beginPath();
+    ctx.moveTo(x, py + 10);
+    ctx.lineTo(x + 16, py + 36);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = roofColor;
+  ctx.beginPath();
+  ctx.moveTo(px + 8, py + 32);
+  ctx.lineTo(px + width / 2, py + 2);
+  ctx.lineTo(px + width - 8, py + 32);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = roofTrimColor;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+
+  ctx.strokeStyle = "rgba(255, 221, 151, 0.32)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(px + 19, py + 30);
+  ctx.lineTo(px + width / 2, py + 9);
+  ctx.lineTo(px + width - 19, py + 30);
+  ctx.stroke();
+
+  drawRoundedRect(doorX, doorY, 26, 42, 0, "#845535", "#4e2d1f");
+  ctx.strokeStyle = "rgba(78, 45, 31, 0.5)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(doorX + 13, doorY + 4);
+  ctx.lineTo(doorX + 13, doorY + 38);
+  ctx.moveTo(doorX + 4, doorY + 18);
+  ctx.lineTo(doorX + 22, doorY + 18);
+  ctx.stroke();
+  drawRoundedRect(doorX + 18, doorY + 22, 4, 4, 0, "#f0c15f");
+
+  const windowXs = width < 144 ? [px + width - 46] : [px + 22, px + width - 46];
+  for (const windowX of windowXs) {
+    drawRoundedRect(windowX, py + 54, 24, 22, 0, "#9fd7ff", "#4f6f7c");
+    ctx.strokeStyle = "rgba(47, 77, 89, 0.72)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(windowX + 12, py + 55);
+    ctx.lineTo(windowX + 12, py + 75);
+    ctx.moveTo(windowX + 1, py + 65);
+    ctx.lineTo(windowX + 23, py + 65);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 255, 255, 0.32)";
+    ctx.fillRect(windowX + 4, py + 57, 7, 5);
+  }
+
+  const signText = typeof building.sign === "string" ? building.sign.trim() : "";
+  if (signText) {
+    let signFontSize = 8;
+    let signFont = `${signFontSize}px 'Press Start 2P'`;
+    const maxSignWidth = Math.max(42, width - 28);
+    const maxTextWidth = maxSignWidth - 12;
+    ctx.font = signFont;
+    let measuredTextWidth = ctx.measureText(signText).width;
+
+    while (signFontSize > 5 && measuredTextWidth > maxTextWidth) {
+      signFontSize -= 1;
+      signFont = `${signFontSize}px 'Press Start 2P'`;
+      ctx.font = signFont;
+      measuredTextWidth = ctx.measureText(signText).width;
+    }
+
+    const signWidth = clamp(measuredTextWidth + 18, 42, maxSignWidth);
+    drawRoundedRect(px + width / 2 - signWidth / 2, py + 36, signWidth, 16, 0, "#fff1cd", "#6d4b2f");
+
+    ctx.save();
+    ctx.translate(px + width / 2, py + 48);
+    ctx.scale(Math.min(1, (signWidth - 12) / measuredTextWidth), 1);
+    drawText(signText, 0, 0, { align: "center", font: signFont, color: "#6d4b2f" });
+    ctx.restore();
+  }
+}
+
+function createCirclePatrolPath(npc) {
+  const requestedRadius = Number.isFinite(npc.patrol.radius) ? npc.patrol.radius : 1;
+  const radius = Math.max(1, Math.round(requestedRadius));
+  const topY = npc.y;
+  const centerX = npc.x;
+  const centerY = npc.y + radius;
+  const path = [];
+
+  for (let x = centerX; x <= centerX + radius; x += 1) {
+    path.push({ x, y: topY });
+  }
+
+  for (let y = topY + 1; y <= centerY + radius; y += 1) {
+    path.push({ x: centerX + radius, y });
+  }
+
+  for (let x = centerX + radius - 1; x >= centerX - radius; x -= 1) {
+    path.push({ x, y: centerY + radius });
+  }
+
+  for (let y = centerY + radius - 1; y >= topY; y -= 1) {
+    path.push({ x: centerX - radius, y });
+  }
+
+  for (let x = centerX - radius + 1; x < centerX; x += 1) {
+    path.push({ x, y: topY });
+  }
+
+  return path;
+}
+
+function npcPatrolPath(npc) {
+  if (!npc.patrol) return null;
+
+  if (Array.isArray(npc.patrol.path)) {
+    const path = npc.patrol.path
+      .map((point) => {
+        if (!point || typeof point !== "object") return null;
+
+        return {
+          x: Number.isFinite(point.x) ? Math.round(point.x) : npc.x + Math.round(point.dx || 0),
+          y: Number.isFinite(point.y) ? Math.round(point.y) : npc.y + Math.round(point.dy || 0)
+        };
+      })
+      .filter(Boolean)
+      .filter((point) => Number.isFinite(point.x) && Number.isFinite(point.y));
+
+    return path.length > 1 ? path : null;
+  }
+
+  if (npc.patrol.shape === "circle") {
+    return createCirclePatrolPath(npc);
+  }
+
+  return null;
+}
+
+function facingForStep(dx, dy, fallback = "down") {
+  if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? "left" : "right";
+  if (dy !== 0) return dy < 0 ? "up" : "down";
+  return fallback;
+}
+
+function npcPatrolState(npc) {
+  if (!npc.patrol) {
+    return { x: npc.x, y: npc.y, facing: "down", frame: 0 };
+  }
+
+  const steps = Math.max(1, npc.patrol.steps || 1);
+  const intervalMs = Math.max(120, npc.patrol.intervalMs || 700);
+  const now = performance.now();
+  const path = npcPatrolPath(npc);
+
+  if (!npc._patrolState) {
+    npc._patrolState = {
+      x: npc.x,
+      y: npc.y,
+      offset: 0,
+      direction: -1,
+      pathIndex: 0,
+      facing: "down",
+      frame: 0,
+      lastStepAt: now
+    };
+
+    if (path) {
+      npc._patrolState.x = path[0].x;
+      npc._patrolState.y = path[0].y;
+    }
+  }
+
+  const state = npc._patrolState;
+  if (now - state.lastStepAt < intervalMs) {
+    return state;
+  }
+
+  if (path) {
+    const nextPathIndex = (state.pathIndex + 1) % path.length;
+    const nextPoint = path[nextPathIndex];
+    const nextFacing = facingForStep(nextPoint.x - state.x, nextPoint.y - state.y, state.facing);
+
+    state.facing = nextFacing;
+
+    if (gameState.player.x === nextPoint.x && gameState.player.y === nextPoint.y) {
+      state.frame = 0;
+      state.lastStepAt = now;
+      return state;
+    }
+
+    state.x = nextPoint.x;
+    state.y = nextPoint.y;
+    state.pathIndex = nextPathIndex;
+    state.frame = (state.frame + 1) % 3;
+    state.lastStepAt = now;
+    return state;
+  }
+
+  const nextDirection =
+    (state.offset <= -steps && state.direction < 0) || (state.offset >= 0 && state.direction > 0)
+      ? state.direction * -1
+      : state.direction;
+  const nextOffset = state.offset + nextDirection;
+  const nextX = npc.patrol.axis === "x" ? npc.x + nextOffset : npc.x;
+  const nextY = npc.patrol.axis === "x" ? npc.y : npc.y + nextOffset;
+  const nextFacing = facingForStep(nextX - state.x, nextY - state.y, state.facing);
+
+  state.facing = nextFacing;
+  state.direction = nextDirection;
+
+  if (gameState.player.x === nextX && gameState.player.y === nextY) {
+    state.frame = 0;
+    state.lastStepAt = now;
+    return state;
+  }
+
+  state.x = nextX;
+  state.y = nextY;
+  state.offset = nextOffset;
+  state.frame = (state.frame + 1) % 3;
+  state.lastStepAt = now;
+  return state;
+}
+
+function drawNpc(npc) {
+  const patrolState = npcPatrolState(npc);
+  const px = worldToScreenX(patrolState.x);
+  const py = worldToScreenY(patrolState.y);
+
+  if (px + TILE_SIZE < 0 || py + TILE_SIZE < 0 || px > canvas.width || py > canvas.height) return;
+
+  if (npc.spritePath) {
+    let spriteRecord = npcSpriteCache.get(npc.spritePath);
+    if (!spriteRecord) {
+      spriteRecord = { image: new Image(), ready: false, failed: false };
+      spriteRecord.image.addEventListener("load", () => {
+        spriteRecord.ready = true;
+      });
+      spriteRecord.image.addEventListener("error", () => {
+        spriteRecord.failed = true;
+      });
+      spriteRecord.image.src = npc.spritePath;
+      npcSpriteCache.set(npc.spritePath, spriteRecord);
+    }
+
+    if (spriteRecord.ready) {
+      const frameSize = 48;
+      const facingRows = { down: 0, left: 1, right: 2, up: 3 };
+      const frameColumn = Math.min(patrolState.frame, Math.max(0, Math.floor(spriteRecord.image.naturalWidth / frameSize) - 1));
+      const frameRow = facingRows[patrolState.facing] ?? facingRows.down;
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(
+        spriteRecord.image,
+        frameColumn * frameSize,
+        frameRow * frameSize,
+        frameSize,
+        frameSize,
+        px,
+        py,
+        TILE_SIZE,
+        TILE_SIZE
+      );
+      ctx.restore();
+      drawText("?", px + 24, py + 7, { align: "center", font: "13px 'Press Start 2P'", color: "#fff1cd" });
+      return;
+    }
+  }
+
+  drawRoundedRect(px + 13, py + 12, 22, 20, 10, "#f5c79c", "#6d4b2f");
+  drawRoundedRect(px + 11, py + 28, 26, 17, 8, "#3d8f6f", "#245441");
+  drawRoundedRect(px + 14, py + 8, 20, 10, 6, "#6d4b2f");
+  drawText("?", px + 24, py + 7, { align: "center", font: "13px 'Press Start 2P'", color: "#fff1cd" });
 }
 
 function drawWorld() {
@@ -546,12 +1038,22 @@ function drawWorld() {
     }
   }
 
-  for (const trigger of map.triggers) {
+  for (const trigger of map.triggers || []) {
     drawTrigger(trigger);
   }
 
-  for (const sign of map.signs) {
+  for (const building of map.buildings || []) {
+    drawBuilding(building);
+  }
+
+  for (const sign of map.signs || []) {
     drawSign(sign);
+  }
+
+  drawCamp(gameState.world.camp);
+
+  for (const npc of map.npcs || []) {
+    drawNpc(npc);
   }
 
   const playerX = worldToScreenX(gameState.player.x);
@@ -849,6 +1351,7 @@ function render() {
 window.addEventListener("keydown", (event) => {
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   const movementKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d"];
+  const interactionKeys = [" ", "Spacebar"];
 
   if (key === "f") {
     toggleFullscreen();
@@ -892,6 +1395,12 @@ window.addEventListener("keydown", (event) => {
 
   if (key === "Enter" && gameState.scene === "world") {
     openMenu();
+    event.preventDefault();
+    return;
+  }
+
+  if (interactionKeys.includes(event.key) && gameState.scene === "world") {
+    interactFacing();
     event.preventDefault();
     return;
   }
