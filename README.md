@@ -71,7 +71,8 @@ For local PHP/MySQL account-save development, see `README.dev.md`.
 - `assets/menu.svg`: title screen source artwork
 - `assets/menu.png`: optimized 960x576 title screen runtime background generated from `assets/menu.svg`
 - `assets/player-sprite.png`: 48px-frame player sprite sheet, with `assets/player-sprite.svg` as fallback/source artwork
-- `assets/creatures/`: optimized 256px runtime creature PNGs, with SVG fallbacks/source artwork
+- `assets/creatures/png/`: optimized 256px runtime creature PNGs
+- `assets/creatures/svg/`: SVG fallbacks/source artwork
 - `src/game.js`: game state, rendering, input coordination, party UI, scene routing, and overworld MP recovery
 - `src/ascensionCutscene.js`: runtime ascension cutscene state, sprite morph animation, and input advancement
 - `src/constants.js`: shared sprite, save, tile, MP, and creature progression constants
