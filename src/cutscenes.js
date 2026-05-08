@@ -6,7 +6,7 @@ export const cutscenes = {
     { type: "end" }
   ],
   partyFainted: [
-    { type: "image", src: "assets/story/faint.png", fallbackSrc: "assets/story/meadow-dawn.svg" },
+    { type: "image", src: "assets/story/faint.png", fallbackSrc: "assets/story/faint.svg" },
     { type: "dialogue", speaker: "Guide", text: "Your creatures can fight no longer." },
     { type: "dialogue", speaker: "Guide", text: "You gather them close and make your way back to safety." },
     { type: "end" }
