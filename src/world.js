@@ -35,7 +35,11 @@ export function createWorldController({
   }
 
   function isWalkable(x, y) {
-    return tileAt(x, y) !== "W" && !getBuildingAt(x, y) && !getNpcAt(x, y) && !getSignAt(x, y);
+    return tileAt(x, y) !== "W"
+      && !getBuildingAt(x, y)
+      && !getFurnitureAt(x, y)
+      && !getNpcAt(x, y)
+      && !getSignAt(x, y);
   }
 
   function getSignAt(x, y) {
@@ -62,6 +66,17 @@ export function createWorldController({
       && building.door.x === x
       && building.door.y === y
     ));
+  }
+
+  function getFurnitureAt(x, y) {
+    return (currentMap().furniture || []).find((furniture) => {
+      const width = furniture.width || 1;
+      const height = furniture.height || 1;
+      return x >= furniture.x
+        && x < furniture.x + width
+        && y >= furniture.y
+        && y < furniture.y + height;
+    });
   }
 
   function npcPosition(npc) {
@@ -148,6 +163,12 @@ export function createWorldController({
     const building = getBuildingAt(targetX, targetY);
     if (building) {
       setMessage(building.text || `${building.name} stands here.`);
+      return;
+    }
+
+    const furniture = getFurnitureAt(targetX, targetY);
+    if (furniture) {
+      setMessage(furniture.text || `${furniture.name || "Furniture"} blocks the way.`);
       return;
     }
 

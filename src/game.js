@@ -702,6 +702,107 @@ function drawCamp(camp) {
   drawRoundedRect(px + 34, py + 42, 5, 3, 0, "#c8553d");
 }
 
+function drawFurniture(furniture) {
+  const px = worldToScreenX(furniture.x);
+  const py = worldToScreenY(furniture.y);
+  const width = (furniture.width || 1) * TILE_SIZE;
+  const height = (furniture.height || 1) * TILE_SIZE;
+
+  if (px + width < 0 || py + height < 0 || px > canvas.width || py > canvas.height) return;
+
+  ctx.fillStyle = "rgba(45, 27, 20, 0.24)";
+  ctx.beginPath();
+  ctx.ellipse(px + width / 2, py + height - 7, Math.max(14, width / 2 - 7), 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (furniture.type === "bed") {
+    drawRoundedRect(px + 5, py + 6, width - 10, height - 13, 7, "#7a5434", "#4e2d1f");
+    drawRoundedRect(px + 10, py + 10, width - 20, 17, 6, "#fff1cd", "#c8a46a");
+    drawRoundedRect(px + 10, py + 27, width - 20, height - 39, 5, "#4f9fd8", "#2f5f83");
+    drawRoundedRect(px + 14, py + 34, width - 28, 6, 0, "rgba(255, 255, 255, 0.24)");
+    return;
+  }
+
+  if (furniture.type === "shelf") {
+    drawRoundedRect(px + 4, py + 5, width - 8, height - 10, 4, "#7a5434", "#4e2d1f");
+    drawRoundedRect(px + 8, py + 12, width - 16, 5, 0, "#4e2d1f");
+    drawRoundedRect(px + 8, py + height - 19, width - 16, 5, 0, "#4e2d1f");
+
+    const bookColors = ["#c8553d", "#3d8f6f", "#f0c15f", "#4d9a63", "#7f4f9f"];
+    for (let i = 0; i < Math.floor((width - 16) / 8); i += 1) {
+      const bookX = px + 10 + i * 8;
+      drawRoundedRect(bookX, py + 18, 5, height - 37, 0, bookColors[i % bookColors.length]);
+    }
+    return;
+  }
+
+  if (furniture.type === "cabinet") {
+    drawRoundedRect(px + 7, py + 4, width - 14, height - 8, 5, "#8b5f3d", "#4e2d1f");
+    ctx.strokeStyle = "rgba(78, 45, 31, 0.6)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px + width / 2, py + 8);
+    ctx.lineTo(px + width / 2, py + height - 10);
+    ctx.stroke();
+    drawRoundedRect(px + width / 2 - 8, py + height / 2, 4, 4, 0, "#f0c15f");
+    drawRoundedRect(px + width / 2 + 4, py + height / 2, 4, 4, 0, "#f0c15f");
+    drawRoundedRect(px + 12, py + 9, width - 24, 5, 0, "rgba(255, 221, 166, 0.2)");
+    return;
+  }
+
+  if (furniture.type === "table" || furniture.type === "mapTable") {
+    drawRoundedRect(px + 10, py + 29, 7, height - 36, 0, "#5b3723");
+    drawRoundedRect(px + width - 17, py + 29, 7, height - 36, 0, "#5b3723");
+    drawRoundedRect(px + 5, py + 11, width - 10, 23, 5, "#9c6644", "#4e2d1f");
+    drawRoundedRect(px + 9, py + 15, width - 18, 5, 0, "rgba(255, 221, 166, 0.28)");
+
+    if (furniture.type === "mapTable") {
+      drawRoundedRect(px + 18, py + 17, width - 36, 11, 1, "#e8d6aa", "#7a5434");
+      ctx.strokeStyle = "rgba(64, 92, 76, 0.55)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px + 22, py + 24);
+      ctx.quadraticCurveTo(px + width / 2, py + 14, px + width - 24, py + 23);
+      ctx.stroke();
+    } else {
+      drawRoundedRect(px + width - 22, py + 17, 8, 9, 3, "#c8e6f5", "#4f6f7c");
+    }
+    return;
+  }
+
+  if (furniture.type === "stove") {
+    drawRoundedRect(px + 9, py + 6, width - 18, height - 13, 5, "#4a4f50", "#242829");
+    drawRoundedRect(px + 14, py + 14, width - 28, 13, 4, "#262b2c", "#111314");
+    drawRoundedRect(px + 16, py + height - 24, width - 32, 11, 3, "#5f6260", "#242829");
+    drawRoundedRect(px + width / 2 - 5, py + 2, 10, 12, 2, "#363a3d", "#1f2224");
+    ctx.strokeStyle = "rgba(255, 241, 205, 0.24)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px + 17, py + 19);
+    ctx.lineTo(px + width - 17, py + 19);
+    ctx.stroke();
+    return;
+  }
+
+  const cols = furniture.width || 1;
+  const rows = furniture.height || 1;
+  for (let y = 0; y < rows; y += 1) {
+    for (let x = 0; x < cols; x += 1) {
+      const crateX = px + x * TILE_SIZE + 7;
+      const crateY = py + y * TILE_SIZE + 6;
+      drawRoundedRect(crateX, crateY, TILE_SIZE - 14, TILE_SIZE - 12, 3, "#b8834f", "#5b3723");
+      ctx.strokeStyle = "rgba(91, 55, 35, 0.55)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(crateX + 4, crateY + 4);
+      ctx.lineTo(crateX + TILE_SIZE - 18, crateY + TILE_SIZE - 16);
+      ctx.moveTo(crateX + TILE_SIZE - 18, crateY + 4);
+      ctx.lineTo(crateX + 4, crateY + TILE_SIZE - 16);
+      ctx.stroke();
+    }
+  }
+}
+
 function drawBuilding(building) {
   const px = worldToScreenX(building.x);
   const py = worldToScreenY(building.y);
@@ -1044,6 +1145,10 @@ function drawWorld() {
 
   for (const building of map.buildings || []) {
     drawBuilding(building);
+  }
+
+  for (const furniture of map.furniture || []) {
+    drawFurniture(furniture);
   }
 
   for (const sign of map.signs || []) {

@@ -853,6 +853,11 @@ export function createBattleController({
       color: "#3d5afe",
       align: "right"
     });
+    drawText(`Lv ${activeCreature.level ?? CREATURE_MIN_LEVEL}`, 870, 264, {
+      font: "16px Outfit",
+      color: "#694435",
+      align: "right"
+    });
 
     ctx.fillStyle = battle.enemy.color;
     ctx.beginPath();

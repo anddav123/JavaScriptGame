@@ -396,7 +396,7 @@ export function createTileRenderer({ ctx }) {
 
     if (tile === "W") {
       if (mapType === "interior") {
-        ctx.fillStyle = "#fffcdc";
+        ctx.fillStyle = "#545450";
         ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
         return;
       }

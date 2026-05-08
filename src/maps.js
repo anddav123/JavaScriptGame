@@ -177,6 +177,44 @@ export const worldMaps = {
     signs: [
       { x: 5, y: 2, text: "Ranger log: creature activity around Sunmeadow is increasing." }
     ],
+    furniture: [
+      {
+        x: 1,
+        y: 1,
+        width: 2,
+        height: 1,
+        type: "shelf",
+        name: "Field Guide Shelf",
+        text: "Field guides, twine, and spare notebooks are stacked in careful rows."
+      },
+      {
+        x: 7,
+        y: 1,
+        width: 2,
+        height: 1,
+        type: "cabinet",
+        name: "Supply Cabinet",
+        text: "The cabinet is packed with bandages, sample jars, and trail markers."
+      },
+      {
+        x: 2,
+        y: 3,
+        width: 2,
+        height: 1,
+        type: "mapTable",
+        name: "Survey Table",
+        text: "A Sunmeadow survey map is pinned beneath smooth river stones."
+      },
+      {
+        x: 7,
+        y: 4,
+        width: 1,
+        height: 2,
+        type: "crateStack",
+        name: "Supply Crates",
+        text: "Sturdy crates hold field rations and spare ranger tools."
+      }
+    ],
     triggers: [
       {
         x: 5,
@@ -255,6 +293,44 @@ export const worldMaps = {
     ],
     signs: [
       { x: 5, y: 2, text: "A note reads: rest, explore, and return stronger." }
+    ],
+    furniture: [
+      {
+        x: 1,
+        y: 1,
+        width: 2,
+        height: 2,
+        type: "bed",
+        name: "Traveler's Bed",
+        text: "A neatly made bed waits for tired travelers."
+      },
+      {
+        x: 6,
+        y: 1,
+        width: 2,
+        height: 1,
+        type: "shelf",
+        name: "Keepsake Shelf",
+        text: "The shelf holds old route charms and a few well-loved books."
+      },
+      {
+        x: 2,
+        y: 4,
+        width: 2,
+        height: 1,
+        type: "table",
+        name: "Wooden Table",
+        text: "A small wooden table has a chipped mug and folded cloth on it."
+      },
+      {
+        x: 7,
+        y: 4,
+        width: 1,
+        height: 2,
+        type: "stove",
+        name: "Iron Stove",
+        text: "The little iron stove still holds a comfortable warmth."
+      }
     ],
     triggers: [
       {
