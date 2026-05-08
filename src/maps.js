@@ -4,7 +4,7 @@ export const worldMaps = {
     mapType: "meadow",
     palette: { top: "#78c98b", bottom: "#5ea96f" },
     encounterRate: 0.085,
-    wildCreatures: ["Buzzybee", "Sproutrunk"],
+    wildCreatures: ["Buzzybee", "Sproutrunk", "Pluma"],
     wildLevelRange: { min: 1, max: 6 },
     terrain: [
       "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
