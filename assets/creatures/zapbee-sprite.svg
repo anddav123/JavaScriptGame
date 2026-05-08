@@ -9,6 +9,9 @@
    version="1.1"
    sodipodi:docname="zapbee-sprite.svg"
    inkscape:version="1.4.3 (0d15f75042, 2025-12-25)"
+   inkscape:export-filename="zapbee-sprite.png"
+   inkscape:export-xdpi="24"
+   inkscape:export-ydpi="24"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns="http://www.w3.org/2000/svg"
@@ -24,15 +27,15 @@
      inkscape:pageopacity="0.0"
      inkscape:pagecheckerboard="true"
      inkscape:deskcolor="#d1d1d1"
-     inkscape:zoom="0.35256723"
-     inkscape:cx="263.77948"
-     inkscape:cy="609.81277"
+     inkscape:zoom="7.710618"
+     inkscape:cx="421.62638"
+     inkscape:cy="558.06162"
      inkscape:window-width="1536"
      inkscape:window-height="795"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:current-layer="outputsvg" />
+     inkscape:current-layer="g12" />
   <g
      id="g12"
      transform="matrix(1.2044125,0,0,1.2044125,-949.19096,966.19148)">
@@ -42,23 +45,8 @@
       <g
          id="g1">
         <path
-           id="p1Aoa9F1Ez"
-           d="m 4550,6119 v -50 l 53,3 52,3 3,38 c 3,32 0,37 -17,37 -12,0 -21,5 -21,10 0,6 -16,10 -35,10 h -35 z" />
-        <path
-           id="p14eGhmLHl"
-           d="m 5440,5258 c 0,-43 43,-88 83,-88 36,0 56,24 57,66 0,37 -29,54 -95,54 -44,0 -45,-1 -45,-32 z" />
-        <path
            id="pkRFHgjO6"
            d="m 3890,5211 c 0,-49 4,-65 26,-90 23,-28 31,-31 83,-31 31,0 62,5 69,12 20,20 14,92 -11,129 -22,33 -25,34 -95,37 l -72,3 z" />
-        <path
-           id="p1HKpee2mT"
-           d="m 4540,4652 c 0,-60 22,-85 72,-80 30,3 33,6 36,40 5,56 -21,88 -69,88 h -39 z" />
-        <path
-           id="pOuaApR6N"
-           d="m 6150,4447 c 0,-50 62,-107 117,-107 44,0 53,10 53,61 0,27 -6,33 -55,55 -31,13 -69,24 -85,24 -27,0 -30,-3 -30,-33 z" />
-        <path
-           id="pdNKFZM5G"
-           d="m 4330,3911 c 0,-68 14,-91 55,-91 24,0 35,5 35,15 0,9 9,15 25,15 22,0 25,4 25,34 0,29 -5,36 -34,50 -19,9 -50,16 -70,16 -35,0 -36,-1 -36,-39 z" />
       </g>
     </g>
     <g
