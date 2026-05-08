@@ -1,6 +1,8 @@
 export const DEFAULT_MOVE_MP_COST = 2;
 
 export const moveCatalog = {
+  bump: {name: "Bump", power: 10, accuracy: 0.9, color: "#d86c42", mpCost: 1},
+  bugBite: {name: "Bug Bite", power: 18, accuracy: 0.9, color: "#81d842", mpCost: 3},
   ember: { name: "Ember", power: 16, accuracy: 0.92, color: "#ef6c3e", mpCost: 5 },
   vineSnap: { name: "Vine Snap", power: 14, accuracy: 0.95, color: "#2d8f64", mpCost: 4 },
   iceShard: { name: "Ice Shard", power: 25, accuracy: 0.5, color: "#9af0f0", mpCost: 8 },
@@ -28,9 +30,19 @@ export const moveCatalog = {
   gustPeck: { name: "Gust Peck", power: 10, accuracy: 0.98, color: "#90a4ae", mpCost: 3 },
   windShear: { name: "Wind Shear", power: 23, accuracy: 0.86, color: "#6ec6ff", mpCost: 7 },
   stormDive: { name: "Storm Dive", power: 35, accuracy: 0.72, color: "#4dabf7", mpCost: 11 },
+  staticTap: { name: "Static Tap", power: 8, accuracy: 0.99, color: "#fff176", mpCost: 2 },
+  chargeZap: { name: "Charge Zap", power: 10, accuracy: 0.97, color: "#ffe066", mpCost: 3 },
   sparkNibble: { name: "Spark Nibble", power: 12, accuracy: 0.95, color: "#ffd43b", mpCost: 4 },
+  voltJolt: { name: "Volt Jolt", power: 16, accuracy: 0.92, color: "#ffec3d", mpCost: 5 },
+  sparkSting: { name: "Spark Sting", power: 20, accuracy: 0.89, color: "#ffd60a", mpCost: 6 },
+  currentClaw: { name: "Current Claw", power: 23, accuracy: 0.86, color: "#fcc419", mpCost: 7 },
   arcLeap: { name: "Arc Leap", power: 24, accuracy: 0.83, color: "#fab005", mpCost: 8 },
+  relayBolt: { name: "Relay Bolt", power: 28, accuracy: 0.8, color: "#f59f00", mpCost: 9 },
+  coilSurge: { name: "Coil Surge", power: 32, accuracy: 0.76, color: "#f08c00", mpCost: 10 },
+  stormPulse: { name: "Storm Pulse", power: 36, accuracy: 0.72, color: "#e67700", mpCost: 11 },
   thunderHorn: { name: "Thunder Horn", power: 38, accuracy: 0.69, color: "#f59f00", mpCost: 12 },
+  thunderCrash: { name: "Thunder Crash", power: 42, accuracy: 0.65, color: "#d9480f", mpCost: 14 },
+  plasmaCrown: { name: "Plasma Crown", power: 46, accuracy: 0.61, color: "#b197fc", mpCost: 16 },
   shadowSwipe: { name: "Shadow Swipe", power: 18, accuracy: 0.9, color: "#6f42c1", mpCost: 5 },
   moonClaw: { name: "Moon Claw", power: 27, accuracy: 0.8, color: "#7048e8", mpCost: 9 },
   starfall: { name: "Starfall", power: 42, accuracy: 0.65, color: "#845ef7", mpCost: 14 },

@@ -16,7 +16,7 @@ export const creatureTemplates = {
       { level: 18, move: "thornBurst" }
     ],
     ascension: { level: 20, species: "Dandelio" },
-    description: "A shy meadow creature that hides in moss and strikes with vines."
+    description: "A bold young lion cub taking its first steps toward ruling the grassy plains."
   },
   Dandelio: {
     species: "Dandelio",
@@ -34,7 +34,7 @@ export const creatureTemplates = {
       { level: 44, move: "heal" }
     ],
     ascension: { level: 50, species: "Folio" },
-    description: "A shy meadow creature that hides in moss and strikes with vines."
+    description: "A bright young lion with a leafy mane, eager for the day it becomes king."
   },
   Folio: {
     species: "Folio",
@@ -52,7 +52,7 @@ export const creatureTemplates = {
       { level: 88, move: "sunflare" },
       { level: 100, move: "heal" }
     ],
-    description: "A shy meadow creature that hides in moss and strikes with vines."
+    description: "The leafy king of the grassy plains, ruling the meadows with quiet strength."
   },
   Scorcha: {
     species: "Scorcha",
@@ -71,7 +71,7 @@ export const creatureTemplates = {
       { level: 60, move: "sunflare" },
       { level: 82, move: "stormDive" }
     ],
-    description: "A fierce cub whose paws glow after every sprint."
+    description: "A fierce cave dragon whose lair glows with bursts of flame."
   },
   Sproutrunk: {
     species: "Sproutrunk",
@@ -88,7 +88,7 @@ export const creatureTemplates = {
       { level: 24, move: "thornBurst" }
     ],
     ascension: { level: 30, species: ["Roselle", "Lilphant"] },
-    description: "A warm-hearted ember fox that leads the party into danger."
+    description: "A gentle young elephant with a sturdy trunk and sprouting forest magic."
   },
   Roselle: {
     species: "Roselle",
@@ -106,7 +106,7 @@ export const creatureTemplates = {
       { level: 70, move: "starfall" },
       { level: 90, move: "sunflare" }
     ],
-    description: "A warm-hearted ember fox that leads the party into danger."
+    description: "A warm-hearted rose elephant said to remember every face it meets."
   },
   Lilphant: {
     species: "Lilphant",
@@ -125,7 +125,61 @@ export const creatureTemplates = {
       { level: 84, move: "glacierDrop" },
       { level: 100, move: "thunderHorn" }
     ],
-    description: "A calm river spirit that mends itself between attacks."
+    description: "A calm river elephant spirit that mends itself between battles."
+  },
+  Buzzybee: {
+    species: "Buzzybee",
+    nickname: "Buzzybee",
+    color: "#d9ff03",
+    spritePath: "assets/creatures/buzzybee-sprite.png",
+    fallbackSpritePath: "assets/creatures/buzzybee-sprite.svg",
+    role: "Wildling",
+    maxHp: 32,
+    moves: ["bump", "focus"],
+    learnset: [
+      { level: 5, move: "staticTap" },
+      { level: 12, move: "chargeZap" },
+      { level: 16, move: "sparkNibble" },
+      { level: 20, move: "bugBite" },
+      { level: 24, move: "sparkSting" }
+    ],
+    ascension: { level: 25, species: "Zapbee" },
+    description: "A cheerful little bee creature that hums happily among the flowers."
+  },
+  Zapbee: {
+    species: "Zapbee",
+    nickname: "Zapbee",
+    color: "#ffd43b",
+    spritePath: "assets/creatures/zapbee-sprite.png",
+    fallbackSpritePath: "assets/creatures/zapbee-sprite.svg",
+    role: "Wildling",
+    maxHp: 54,
+    moves: ["sparkNibble", "bugBite", "sparkSting", "focus"],
+    learnset: [
+      { level: 25, move: "voltJolt" },
+      { level: 32, move: "currentClaw" },
+      { level: 40, move: "arcLeap" }
+    ],
+    ascension: { level: 45, species: "Electrabee" },
+    description: "A fast, charged pollinator that snaps through the air in bright jolts."
+  },
+  Electrabee: {
+    species: "Electrabee",
+    nickname: "Electrabee",
+    color: "#ffb703",
+    spritePath: "assets/creatures/electrabee-sprite.png",
+    fallbackSpritePath: "assets/creatures/electrabee-sprite.svg",
+    role: "Wildling",
+    maxHp: 78,
+    moves: ["voltJolt", "currentClaw", "arcLeap", "focus"],
+    learnset: [
+      { level: 45, move: "relayBolt" },
+      { level: 58, move: "coilSurge" },
+      { level: 72, move: "stormPulse" },
+      { level: 88, move: "thunderCrash" },
+      { level: 100, move: "plasmaCrown" }
+    ],
+    description: "A radiant hive guardian that conducts stormlight through its wings."
   }
 };
 
