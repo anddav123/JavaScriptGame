@@ -127,6 +127,55 @@ export const creatureTemplates = {
     ],
     description: "A calm river elephant spirit that mends itself between battles."
   },
+  Pluma: {
+    species: "Pluma",
+    nickname: "Pluma",
+    color: "#70b7d9",
+    spritePath: "assets/creatures/pluma-sprite.png",
+    fallbackSpritePath: "assets/creatures/pluma-sprite.svg",
+    role: "Wildling",
+    maxHp: 34,
+    moves: ["gustPeck", "focus"],
+    learnset: [
+      { level: 5, move: "windShear" }
+    ],
+    ascension: { level: 10, species: "Swiftwing" },
+    description: "A bright little bird that rides meadow breezes on soft, quick feathers."
+  },
+  Swiftwing: {
+    species: "Swiftwing",
+    nickname: "Swiftwing",
+    color: "#4f9fd8",
+    spritePath: "assets/creatures/swiftwing-sprite.png",
+    fallbackSpritePath: "assets/creatures/swiftwing-sprite.svg",
+    role: "Wildling",
+    maxHp: 50,
+    moves: ["gustPeck", "windShear", "focus"],
+    learnset: [
+      { level: 18, move: "mistCut" },
+      { level: 26, move: "stormDive" }
+    ],
+    ascension: { level: 30, species: "Azuldove" },
+    description: "A nimble sky hunter whose wings flash blue as it cuts through the air."
+  },
+  Azuldove: {
+    species: "Azuldove",
+    nickname: "Azuldove",
+    color: "#3f83c7",
+    spritePath: "assets/creatures/azuldove-sprite.png",
+    fallbackSpritePath: "assets/creatures/azuldove-sprite.svg",
+    role: "Wildling",
+    maxHp: 74,
+    moves: ["gustPeck", "windShear", "mistCut", "focus"],
+    learnset: [
+      { level: 30, move: "stormDive" },
+      { level: 42, move: "streamLash" },
+      { level: 58, move: "moonClaw" },
+      { level: 74, move: "starfall" },
+      { level: 92, move: "heal" }
+    ],
+    description: "A serene blue dove said to calm stormclouds with a single sweeping glide."
+  },
   Buzzybee: {
     species: "Buzzybee",
     nickname: "Buzzybee",
