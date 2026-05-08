@@ -130,7 +130,7 @@ export const creatureTemplates = {
   Buzzybee: {
     species: "Buzzybee",
     nickname: "Buzzybee",
-    color: "#d9ff03",
+    color: "#f8ff95",
     spritePath: "assets/creatures/buzzybee-sprite.png",
     fallbackSpritePath: "assets/creatures/buzzybee-sprite.svg",
     role: "Wildling",
@@ -149,7 +149,7 @@ export const creatureTemplates = {
   Zapbee: {
     species: "Zapbee",
     nickname: "Zapbee",
-    color: "#ffd43b",
+    color: "#f8ff95",
     spritePath: "assets/creatures/zapbee-sprite.png",
     fallbackSpritePath: "assets/creatures/zapbee-sprite.svg",
     role: "Wildling",
@@ -166,7 +166,7 @@ export const creatureTemplates = {
   Electrabee: {
     species: "Electrabee",
     nickname: "Electrabee",
-    color: "#ffb703",
+    color: "#f8ff95",
     spritePath: "assets/creatures/electrabee-sprite.png",
     fallbackSpritePath: "assets/creatures/electrabee-sprite.svg",
     role: "Wildling",
