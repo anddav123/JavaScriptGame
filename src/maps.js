@@ -114,7 +114,7 @@ export const worldMaps = {
         x: 62,
         y: 17,
         name: "Meadow Ranger Trainee",
-        spritePath: "assets/npc/ranger-sprite.png",
+        spritePath: "assets/npc/redshirt-sprite.png",
         patrol: { axis: "x", steps: 3, intervalMs: 700 },
         dialogue: "Oh no I'm late for my first day of patrol."
       }
