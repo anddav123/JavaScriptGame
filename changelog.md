@@ -2,6 +2,16 @@
 
 Project changes are recorded here by date. The README stays focused on what the project is and how to run it.
 
+## 2026-05-09
+
+- Refactored canvas helpers, start menu, in-game menu, world objects, and NPC logic out of `src/game.js`.
+- Added `src/worldObjects.js` for buildings, furniture, signs, and walk-on trigger rendering.
+- Added `src/nonPlayerCharacter.js` for NPC rendering, sprite loading, dialogue positioning, and patrol animation.
+- Kept player movement on the original tile-step behavior while adding NPC-only smooth patrol walking visuals.
+- Added `src/canvasUi.js`, `src/menu.js`, and `src/startMenu.js` for shared canvas drawing and menu controllers.
+- Extracted battle XP, level-up, ascension, and move-learning rules into `src/battleProgression.js`.
+- Slimmed `src/battle.js` so it focuses more on encounter setup, turn flow, player actions, battle input, and battle drawing.
+
 ## 2026-05-07
 
 - Added campsite support with party recovery and save/import persistence.
