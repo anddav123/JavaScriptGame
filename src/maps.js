@@ -107,7 +107,7 @@ export const worldMaps = {
         y: 14,
         name: "Meadow Ranger",
         spritePath: "assets/npc/ranger-sprite.png",
-        patrol: { shape: "circle", radius: 1, intervalMs: 700 },
+        patrol: { shape: "circle", radius: 1, intervalMs: 900 },
         dialogue: "Keep an eye on the tall grass. New creature families have been spotted nearby."
       },
       {
@@ -115,7 +115,7 @@ export const worldMaps = {
         y: 17,
         name: "Meadow Ranger Trainee",
         spritePath: "assets/npc/redshirt-sprite.png",
-        patrol: { axis: "x", steps: 3, intervalMs: 700 },
+        patrol: { axis: "x", steps: 3, intervalMs: 1200 },
         dialogue: "Oh no I'm late for my first day of patrol."
       }
     ],
