@@ -1,4 +1,8 @@
-import { TILE_SIZE } from "./constants.js";
+import {
+  INITIAL_PLAYER_ORBS,
+  INITIAL_PLAYER_POTIONS,
+  TILE_SIZE
+} from "./constants.js";
 import { worldMaps } from "./maps.js";
 
 export function createWorldController({
@@ -168,6 +172,13 @@ export function createWorldController({
 
     const npc = getNpcAt(targetX, targetY);
     if (npc) {
+      if (npc.restockInitialItems) {
+        gameState.player.potions = INITIAL_PLAYER_POTIONS;
+        gameState.player.orbs = INITIAL_PLAYER_ORBS;
+        setMessage(`${npc.name}: ${npc.dialogue} Restocked to ${INITIAL_PLAYER_ORBS} capture orbs and ${INITIAL_PLAYER_POTIONS} tonics.`);
+        return;
+      }
+
       setMessage(`${npc.name}: ${npc.dialogue}`);
       return;
     }

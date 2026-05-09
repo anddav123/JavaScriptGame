@@ -49,6 +49,20 @@ export const worldMaps = {
         roofTrimColor: "#663321"
       },
       {
+        x: 37,
+        y: 15,
+        width: 4,
+        height: 3,
+        door: { x: 39, y: 17 },
+        name: "New Town Shop",
+        sign: "Shop",
+        text: "New Town Shop: tonics, capture orbs, and trail snacks line the shelves.",
+        wallColor: "#f0d7a6",
+        trimColor: "#725135",
+        roofColor: "#c8553d",
+        roofTrimColor: "#7a2e24"
+      },
+      {
         x: 54,
         y: 14,
         width: 4,
@@ -148,6 +162,15 @@ export const worldMaps = {
         message: "You enter the Ranger Field Station."
       },
       {
+        x: 39,
+        y: 17,
+        kind: "door",
+        targetMap: "newTownShop",
+        targetX: 5,
+        targetY: 6,
+        message: "You enter the New Town Shop."
+      },
+      {
         x: 68,
         y: 2,
         kind: "cave",
@@ -155,6 +178,94 @@ export const worldMaps = {
         targetX: 44,
         targetY: 13,
         message: "You step into Ember Cave."
+      }
+    ]
+  },
+  newTownShop: {
+    name: "New Town Shop",
+    mapType: "interior",
+    palette: { top: "#000000", bottom: "#020202" },
+    encounterRate: -1,
+    wildCreatures: [],
+    terrain: [
+      "WWWWWWWWWW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WRRRRRRRRW",
+      "WWWWWRWWWW"
+    ],
+    signs: [
+      { x: 5, y: 1, text: "Today's stock: tonics, capture orbs, and warm field rations." }
+    ],
+    furniture: [
+      {
+        x: 1,
+        y: 1,
+        width: 2,
+        height: 1,
+        type: "shelf",
+        name: "Tonic Shelf",
+        text: "Bright tonic bottles are arranged from mild to extra-zingy."
+      },
+      {
+        x: 7,
+        y: 1,
+        width: 2,
+        height: 1,
+        type: "shelf",
+        name: "Orb Shelf",
+        text: "Polished capture orbs sit in little straw nests."
+      },
+      {
+        x: 2,
+        y: 3,
+        width: 6,
+        height: 1,
+        type: "table",
+        name: "Shop Counter",
+        text: "The counter smells faintly of cedar polish and berry sweets."
+      },
+      {
+        x: 1,
+        y: 5,
+        width: 1,
+        height: 1,
+        type: "crateStack",
+        name: "Delivery Crate",
+        text: "A fresh delivery label reads: New Town Shop."
+      },
+      {
+        x: 8,
+        y: 5,
+        width: 1,
+        height: 1,
+        type: "cabinet",
+        name: "Locked Cabinet",
+        text: "Rare supplies are tucked safely behind the little brass latch."
+      }
+    ],
+    npcs: [
+      {
+        x: 5,
+        y: 2,
+        name: "Shopkeeper Lily",
+        spritePath: "assets/npc/shopkeeper-sprite.png",
+        restockInitialItems: true,
+        dialogue: "I'll reset your field kit to shop standard."
+      }
+    ],
+    triggers: [
+      {
+        x: 5,
+        y: 7,
+        kind: "door-exit",
+        targetMap: "sunmeadow",
+        targetX: 39,
+        targetY: 18,
+        message: "You step back into New Town."
       }
     ]
   },

@@ -261,7 +261,7 @@ export function createNonPlayerCharacterController({
           TILE_SIZE
         );
         ctx.restore();
-        drawText("?", px + 24, py + walkBob + 7, { align: "center", font: "13px 'Press Start 2P'", color: "#fff1cd" });
+        //drawText("?", px + 24, py + walkBob + 7, { align: "center", font: "13px 'Press Start 2P'", color: "#fff1cd" });
         return;
       }
     }
