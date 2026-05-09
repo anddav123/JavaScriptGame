@@ -1,6 +1,7 @@
 import {
   CREATURE_MAX_LEVEL,
   CREATURE_XP_PER_LEVEL,
+  PLAYER_CAMP_MAX_CREATURES,
   PLAYER_PARTY_MAX_SIZE
 } from "./constants.js";
 import { moveCatalog } from "./moves.js";
@@ -35,6 +36,7 @@ export function createCampMenuController({
     gameState.campMenu.storedIndex = 0;
     gameState.campMenu.partyIndex = gameState.player.activeIndex;
     gameState.campMenu.selectedStoredIndex = null;
+    gameState.campMenu.pendingCreature = null;
     setMessage("Camp is ready.");
   }
 
@@ -42,6 +44,17 @@ export function createCampMenuController({
     gameState.scene = "world";
     gameState.campMenu.mode = "main";
     gameState.campMenu.selectedStoredIndex = null;
+    gameState.campMenu.pendingCreature = null;
+  }
+
+  function openCampStorageFullMenu(capturedCreature) {
+    gameState.scene = "campMenu";
+    gameState.campMenu.mode = "captureStorageFull";
+    gameState.campMenu.mainIndex = 0;
+    gameState.campMenu.storedIndex = 0;
+    gameState.campMenu.partyIndex = gameState.player.activeIndex;
+    gameState.campMenu.selectedStoredIndex = null;
+    gameState.campMenu.pendingCreature = capturedCreature;
   }
 
   function restAtCamp() {
@@ -130,6 +143,32 @@ export function createCampMenuController({
       return;
     }
 
+    if (gameState.campMenu.mode === "captureStorageFull") {
+      const storage = storedCreatures();
+      if (!gameState.campMenu.pendingCreature) {
+        closeCampMenu();
+        return;
+      }
+
+      if (storage.length === 0) {
+        storage.push(gameState.campMenu.pendingCreature);
+        setMessage(`${gameState.campMenu.pendingCreature.nickname} was stored at camp.`);
+        closeCampMenu();
+        return;
+      }
+
+      if (key === "ArrowUp" || key === "w") {
+        gameState.campMenu.storedIndex = (gameState.campMenu.storedIndex - 1 + storage.length) % storage.length;
+      } else if (key === "ArrowDown" || key === "s") {
+        gameState.campMenu.storedIndex = (gameState.campMenu.storedIndex + 1) % storage.length;
+      } else if (key === "Enter") {
+        replaceStoredCreatureWithPendingCapture();
+      } else if (key === "Backspace") {
+        forfeitPendingCapture();
+      }
+      return;
+    }
+
     if (gameState.campMenu.mode === "stored") {
       const storage = storedCreatures();
       if (storage.length === 0) {
@@ -161,6 +200,29 @@ export function createCampMenuController({
         gameState.campMenu.mode = "stored";
       }
     }
+  }
+
+  function replaceStoredCreatureWithPendingCapture() {
+    const storage = storedCreatures();
+    const pendingCreature = gameState.campMenu.pendingCreature;
+    if (!pendingCreature || storage.length === 0) {
+      closeCampMenu();
+      return;
+    }
+
+    const storedIndex = clamp(gameState.campMenu.storedIndex ?? 0, 0, storage.length - 1);
+    const releasedCreature = storage[storedIndex];
+    storage[storedIndex] = pendingCreature;
+    setMessage(`${pendingCreature.nickname} was stored at camp. ${releasedCreature.nickname} was released.`);
+    closeCampMenu();
+  }
+
+  function forfeitPendingCapture() {
+    const pendingCreature = gameState.campMenu.pendingCreature;
+    if (pendingCreature) {
+      setMessage(`${pendingCreature.nickname} was released.`);
+    }
+    closeCampMenu();
   }
 
   function xpProgress(creature) {
@@ -237,7 +299,7 @@ export function createCampMenuController({
       font: "18px Outfit",
       color: "#694435"
     });
-    drawText(`Stored ${storedCreatures().length}`, 520, 180, {
+    drawText(`Stored ${storedCreatures().length}/${PLAYER_CAMP_MAX_CREATURES}`, 500, 180, {
       font: "18px Outfit",
       color: "#694435"
     });
@@ -309,6 +371,44 @@ export function createCampMenuController({
     drawCreatureDetails(campCreature, 506, 132, 376, 360);
   }
 
+  function drawCaptureStorageFullOverlay() {
+    const storage = storedCreatures();
+    const pendingCreature = gameState.campMenu.pendingCreature;
+    drawRoundedRect(42, 40, 876, 492, 22, "rgba(255, 250, 243, 0.98)", "#3d271d");
+    drawText("Camp Full", 76, 74, { font: "16px 'Press Start 2P'", color: "#b93c2f" });
+    drawText("Enter: replace stored   Backspace: forfeit catch", 474, 74, {
+      font: "16px Outfit",
+      color: "#694435"
+    });
+
+    if (!pendingCreature) {
+      drawText("No pending capture.", 76, 148, { font: "22px Outfit", color: "#694435" });
+      return;
+    }
+
+    drawText(`${pendingCreature.nickname} needs a camp storage slot.`, 76, 108, {
+      font: "18px Outfit",
+      color: "#694435"
+    });
+
+    const maxRows = 6;
+    const start = visibleCreatureWindow(gameState.campMenu.storedIndex, storage.length, maxRows);
+    storage.slice(start, start + maxRows).forEach((creature, offset) => {
+      const index = start + offset;
+      drawCreatureRow(creature, 68, 132 + offset * 62, 400, index === gameState.campMenu.storedIndex);
+    });
+
+    if (storage.length > maxRows) {
+      drawText(`${gameState.campMenu.storedIndex + 1}/${storage.length}`, 432, 510, {
+        font: "15px Outfit",
+        color: "#694435",
+        align: "right"
+      });
+    }
+
+    drawCreatureDetails(pendingCreature, 506, 132, 376, 360);
+  }
+
   function drawCampMenuOverlay() {
     ctx.fillStyle = "rgba(38, 24, 18, 0.3)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -323,12 +423,18 @@ export function createCampMenuController({
       return;
     }
 
+    if (gameState.campMenu.mode === "captureStorageFull") {
+      drawCaptureStorageFullOverlay();
+      return;
+    }
+
     drawCampMainOverlay();
   }
 
   return {
     drawCampMenuOverlay,
     handleCampMenuNavigation,
-    openCampMenu
+    openCampMenu,
+    openCampStorageFullMenu
   };
 }

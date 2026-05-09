@@ -62,6 +62,8 @@ For small refactors, prefer moving cohesive behavior into one of these modules b
 - If no creature move can be afforded, the player turn is skipped and 1 MP is recovered
 - The player party is capped at 5 creatures
 - Captures beyond the party cap are stored in `player.campCreatures`
+- Camp storage is capped at 200 creatures in both frontend validation and `api/save.php`
+- When camp storage is full, successful captures open a replacement menu or can be released with `Backspace`
 - Interacting with camp opens a menu to rest or swap stored creatures with party creatures
 - Creature move costs are defined in `src/moves.js`; non-damage moves default to 2 MP
 - Winning battles grants 2 XP to the active creature

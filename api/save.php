@@ -7,7 +7,8 @@ require __DIR__ . '/config.php';
 const SAVE_VERSION = 1;
 const MAX_SAVE_JSON_BYTES = 204800; // 200 KB save payload limit.
 const VALID_FACINGS = ['down', 'left', 'right', 'up'];
-const MAX_PARTY_SIZE = 12;
+const MAX_PARTY_SIZE = 5;
+const MAX_CAMP_CREATURES = 200;
 const MAX_CREATURE_MOVES = 4;
 const MAX_CREATURE_LEVEL = 100;
 
@@ -113,7 +114,8 @@ function validate_game_save(mixed $gameState): bool
         'mp',
         'mpRechargeStepProgress',
         'activeIndex',
-        'party'
+        'party',
+        'campCreatures'
     ])) {
         return false;
     }
@@ -134,6 +136,12 @@ function validate_game_save(mixed $gameState): bool
     if (!is_int_between($player['activeIndex'] ?? null, 0, count($party) - 1)) return false;
 
     foreach ($party as $creature) {
+        if (!validate_creature_save($creature)) return false;
+    }
+
+    $campCreatures = $player['campCreatures'] ?? [];
+    if (!is_array($campCreatures) || count($campCreatures) > MAX_CAMP_CREATURES) return false;
+    foreach ($campCreatures as $creature) {
         if (!validate_creature_save($creature)) return false;
     }
 

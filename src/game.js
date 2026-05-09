@@ -71,7 +71,8 @@ const gameState = {
     mainIndex: 0,
     storedIndex: 0,
     partyIndex: 0,
-    selectedStoredIndex: null
+    selectedStoredIndex: null,
+    pendingCreature: null
   },
   world: {
     currentMapId: "sunmeadow",
@@ -142,7 +143,8 @@ const {
 const {
   drawCampMenuOverlay,
   handleCampMenuNavigation,
-  openCampMenu
+  openCampMenu,
+  openCampStorageFullMenu
 } = createCampMenuController({
   canvas,
   ctx,
@@ -228,6 +230,7 @@ const battleController = createBattleController({
     };
     gameState.scene = "moveLearning";
   },
+  onCampStorageFull: openCampStorageFullMenu,
   onPartyFainted: startPartyFaintedCutscene
 });
 

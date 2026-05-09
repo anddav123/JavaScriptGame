@@ -1,5 +1,6 @@
 import {
   PLAYER_FACING_ROWS,
+  PLAYER_CAMP_MAX_CREATURES,
   PLAYER_MP_RECHARGE_STEP_INTERVAL,
   PLAYER_PARTY_MAX_SIZE,
   SAVE_VERSION
@@ -426,6 +427,9 @@ export function createSaveController({
         ? parsedCampCreatures.map((creature, index) => normalizeCreatureSave(creature, index, "Camp creature"))
         : [])
     ];
+    if (campCreatures.length > PLAYER_CAMP_MAX_CREATURES) {
+      throw new Error("Save data includes too many camp creatures.");
+    }
     const party = importedParty.slice(0, PLAYER_PARTY_MAX_SIZE);
     const activeIndex = Number.isInteger(parsedSave.player.activeIndex)
       ? clamp(parsedSave.player.activeIndex, 0, party.length - 1)
@@ -476,6 +480,7 @@ export function createSaveController({
     gameState.campMenu.storedIndex = 0;
     gameState.campMenu.partyIndex = activeIndex;
     gameState.campMenu.selectedStoredIndex = null;
+    gameState.campMenu.pendingCreature = null;
     gameState.startMenu.index = 0;
     gameState.battle = null;
     gameState.cutscene = null;

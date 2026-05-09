@@ -49,6 +49,7 @@ For local PHP/MySQL account-save development, see `README.dev.md`.
 - Winning battles grants XP, level-ups, new moves, and eventual creature ascensions
 - Ascensions play a short sprite-morph cutscene before returning to the overworld
 - The player can carry 5 creatures; extra captures are sent to camp storage
+- If camp storage is full, a new catch can replace a stored creature or be released
 - Camp can fully restore creature health and player MP or switch stored creatures into the party
 - Maps can include connected areas, buildings, furniture, signs, NPCs, patrol routes, and wild encounter ranges
 - NPC patrols are visually smoothed, while player movement keeps the original tile-step feel

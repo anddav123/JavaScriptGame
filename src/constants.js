@@ -10,6 +10,7 @@ export const PLAYER_MP_RECHARGE_AMOUNT = 1;
 export const PLAYER_MP_RECHARGE_STEP_INTERVAL = 2;
 export const PLAYER_BATTLE_MP_RECOVERY = 1;
 export const PLAYER_PARTY_MAX_SIZE = 5;
+export const PLAYER_CAMP_MAX_CREATURES = 200;
 export const CREATURE_MIN_LEVEL = 1;
 export const CREATURE_MAX_LEVEL = 100;
 export const CREATURE_XP_PER_WIN = 2;

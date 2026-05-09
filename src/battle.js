@@ -6,6 +6,7 @@ import {
 import {
   CREATURE_MAX_LEVEL,
   CREATURE_MIN_LEVEL,
+  PLAYER_CAMP_MAX_CREATURES,
   PLAYER_PARTY_MAX_SIZE,
   PLAYER_BATTLE_MP_RECOVERY
 } from "./constants.js";
@@ -29,6 +30,7 @@ export function createBattleController({
   drawCreatureSprite,
   startAscensionSequence,
   startMoveLearningSequence,
+  onCampStorageFull,
   onPartyFainted
 }) {
   function campCreatureStorage() {
@@ -46,16 +48,26 @@ export function createBattleController({
       level: enemy?.level,
       captured: true
     });
+
     if (gameState.player.party.length < PLAYER_PARTY_MAX_SIZE) {
       gameState.player.party.push(capturedCreature);
       setMessage(`${species} joined your party. Press Enter to view Party.`);
-      return true;
+      return "party";
     }
 
-    campCreatureStorage().push(capturedCreature);
+    const storage = campCreatureStorage();
+    if (storage.length >= PLAYER_CAMP_MAX_CREATURES) {
+      setMessage(`Camp storage is full. Store ${species} by replacing a camp creature, or forfeit the catch.`);
+      if (typeof onCampStorageFull === "function") {
+        onCampStorageFull(capturedCreature);
+      }
+      return "storageFull";
+    }
+
+    storage.push(capturedCreature);
     const campAction = gameState.world.camp ? "Visit camp" : "Make camp";
     setMessage(`${species} was sent to camp storage. ${campAction} to switch creatures.`);
-    return true;
+    return "camp";
   }
 
   function writeBattleLog(text) {
@@ -98,10 +110,12 @@ export function createBattleController({
     writeBattleLog(`You threw an capture orb at ${enemy.name}.`);
 
     if (Math.random() <= catchChance) {
-      captureCreature(enemy.name);
+      const captureResult = captureCreature(enemy.name);
       writeBattleLog(`${enemy.name} was captured.`);
-      gameState.scene = "world";
       gameState.battle = null;
+      if (captureResult !== "storageFull") {
+        gameState.scene = "world";
+      }
       return true;
     }
 
