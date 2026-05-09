@@ -6,6 +6,7 @@ import {
 import {
   CREATURE_MAX_LEVEL,
   CREATURE_MIN_LEVEL,
+  PLAYER_PARTY_MAX_SIZE,
   PLAYER_BATTLE_MP_RECOVERY
 } from "./constants.js";
 import { createBattleProgressionController } from "./battleProgression.js";
@@ -30,6 +31,13 @@ export function createBattleController({
   startMoveLearningSequence,
   onPartyFainted
 }) {
+  function campCreatureStorage() {
+    if (!Array.isArray(gameState.player.campCreatures)) {
+      gameState.player.campCreatures = [];
+    }
+    return gameState.player.campCreatures;
+  }
+
   function captureCreature(species) {
     const enemy = gameState.battle?.enemy;
     const capturedCreature = createCreatureInstance(species, {
@@ -38,8 +46,15 @@ export function createBattleController({
       level: enemy?.level,
       captured: true
     });
-    gameState.player.party.push(capturedCreature);
-    setMessage(`${species} joined your party. Press Enter to view Party.`);
+    if (gameState.player.party.length < PLAYER_PARTY_MAX_SIZE) {
+      gameState.player.party.push(capturedCreature);
+      setMessage(`${species} joined your party. Press Enter to view Party.`);
+      return true;
+    }
+
+    campCreatureStorage().push(capturedCreature);
+    const campAction = gameState.world.camp ? "Visit camp" : "Make camp";
+    setMessage(`${species} was sent to camp storage. ${campAction} to switch creatures.`);
     return true;
   }
 
@@ -75,7 +90,8 @@ export function createBattleController({
 
     gameState.player.orbs -= 1;
     const enemy = battle.enemy;
-    const alreadyOwned = gameState.player.party.some((creature) => creature.species === enemy.name);
+    const alreadyOwned = [...gameState.player.party, ...campCreatureStorage()]
+      .some((creature) => creature.species === enemy.name);
     const healthRatio = enemy.hp / enemy.maxHp;
     const catchChance = clamp(0.2 + (1 - healthRatio) * 0.65 + (alreadyOwned ? -0.08 : 0.05), 0.12, 0.92);
 

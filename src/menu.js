@@ -46,7 +46,7 @@ export function createMenuController({
       x: gameState.player.x,
       y: gameState.player.y
     };
-    setMessage("Camp set. If your creature faints, you will return here.");
+    setMessage("Camp set. Rest here, switch stored creatures, or return here after fainting.");
     closeMenu();
   }
 
@@ -144,7 +144,7 @@ export function createMenuController({
         font: "16px Outfit",
         color: selected ? "#fff8f0" : "#694435"
       });
-      drawText(`HP ${creature.hp}/${creature.maxHp}`, 328, cardY + 48, {
+      drawText(`HP ${creature.hp}/${creature.maxHp}`, 394, cardY + 48, {
         font: "16px Outfit",
         color: selected ? "#fff8f0" : "#2a7f62",
         align: "right"

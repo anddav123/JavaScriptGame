@@ -7,7 +7,8 @@ export function createWorldController({
   setMessage,
   clamp,
   onPlayerStep = () => {},
-  onEncounter
+  onEncounter,
+  onCampInteract = () => {}
 }) {
   function currentMap() {
     return worldMaps[gameState.world.currentMapId];
@@ -96,13 +97,6 @@ export function createWorldController({
     return camp.x === x && camp.y === y ? camp : null;
   }
 
-  function healPartyAtCamp() {
-    for (const creature of gameState.player.party) {
-      creature.hp = creature.maxHp;
-    }
-    setMessage("Your party rested at camp and fully recovered.");
-  }
-
   function worldToScreenX(tileX) {
     return tileX * TILE_SIZE - gameState.camera.x;
   }
@@ -143,7 +137,7 @@ export function createWorldController({
     const targetY = gameState.player.y + dy;
 
     if (getCampAt(gameState.player.x, gameState.player.y) || getCampAt(targetX, targetY)) {
-      healPartyAtCamp();
+      onCampInteract();
       return;
     }
 

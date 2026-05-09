@@ -40,6 +40,7 @@ For local PHP/MySQL account-save development, see `README.dev.md`.
 - Menu navigation: `WASD` or arrow keys
 - Confirm party/menu choice: `Enter`
 - Back out of party screen: `Backspace`
+- Camp menu: interact with camp using `Space`, then choose `Rest` or `Switch Creatures`
 - Battle actions: click moves, `Tonic`, `Catch`, `MP +1`, or `Run`
 
 ## Battle and Progression
@@ -47,6 +48,8 @@ For local PHP/MySQL account-save development, see `README.dev.md`.
 - Creature moves spend MP, and MP can be recovered by walking or using `MP +1` in battle
 - Winning battles grants XP, level-ups, new moves, and eventual creature ascensions
 - Ascensions play a short sprite-morph cutscene before returning to the overworld
+- The player can carry 5 creatures; extra captures are sent to camp storage
+- Camp can fully restore creature health and player MP or switch stored creatures into the party
 - Maps can include connected areas, buildings, furniture, signs, NPCs, patrol routes, and wild encounter ranges
 - NPC patrols are visually smoothed, while player movement keeps the original tile-step feel
 

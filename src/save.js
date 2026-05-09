@@ -1,4 +1,9 @@
-import { PLAYER_FACING_ROWS, PLAYER_MP_RECHARGE_STEP_INTERVAL, SAVE_VERSION } from "./constants.js";
+import {
+  PLAYER_FACING_ROWS,
+  PLAYER_MP_RECHARGE_STEP_INTERVAL,
+  PLAYER_PARTY_MAX_SIZE,
+  SAVE_VERSION
+} from "./constants.js";
 import { creatureTemplates } from "./creatures.js";
 import { worldMaps } from "./maps.js";
 
@@ -259,9 +264,9 @@ export function createSaveController({
     return typeof mapId === "string" && Boolean(worldMaps[mapId]);
   }
 
-  function normalizeCreatureSave(creature, index) {
+  function normalizeCreatureSave(creature, index, label = "Party member") {
     if (!creature || typeof creature !== "object" || typeof creature.species !== "string" || !creatureTemplates[creature.species]) {
-      throw new Error(`Party member ${index + 1} is invalid.`);
+      throw new Error(`${label} ${index + 1} is invalid.`);
     }
 
     const template = creatureTemplates[creature.species];
@@ -278,6 +283,18 @@ export function createSaveController({
   }
 
   function serializeGameState() {
+    const serializeCreature = (creature) => ({
+      species: creature.species,
+      nickname: creature.nickname,
+      role: creature.role,
+      level: creature.level,
+      xp: creature.xp,
+      maxHp: creature.maxHp,
+      hp: creature.hp,
+      moves: creature.moves,
+      captured: creature.captured
+    });
+
     return {
       saveVersion: SAVE_VERSION,
       world: {
@@ -295,17 +312,8 @@ export function createSaveController({
         mp: gameState.player.mp,
         mpRechargeStepProgress: gameState.player.mpRechargeStepProgress,
         activeIndex: gameState.player.activeIndex,
-        party: gameState.player.party.map((creature) => ({
-          species: creature.species,
-          nickname: creature.nickname,
-          role: creature.role,
-          level: creature.level,
-          xp: creature.xp,
-          maxHp: creature.maxHp,
-          hp: creature.hp,
-          moves: creature.moves,
-          captured: creature.captured
-        }))
+        party: gameState.player.party.map(serializeCreature),
+        campCreatures: (gameState.player.campCreatures || []).map(serializeCreature)
       }
     };
   }
@@ -407,7 +415,18 @@ export function createSaveController({
       throw new Error("Save data must include at least one party member.");
     }
 
-    const party = parsedSave.player.party.map((creature, index) => normalizeCreatureSave(creature, index));
+    const importedParty = parsedSave.player.party.map((creature, index) => normalizeCreatureSave(creature, index));
+    const parsedCampCreatures = parsedSave.player.campCreatures;
+    if (parsedCampCreatures !== undefined && !Array.isArray(parsedCampCreatures)) {
+      throw new Error("Save data includes invalid camp creature storage.");
+    }
+    const campCreatures = [
+      ...importedParty.slice(PLAYER_PARTY_MAX_SIZE),
+      ...(Array.isArray(parsedCampCreatures)
+        ? parsedCampCreatures.map((creature, index) => normalizeCreatureSave(creature, index, "Camp creature"))
+        : [])
+    ];
+    const party = importedParty.slice(0, PLAYER_PARTY_MAX_SIZE);
     const activeIndex = Number.isInteger(parsedSave.player.activeIndex)
       ? clamp(parsedSave.player.activeIndex, 0, party.length - 1)
       : 0;
@@ -424,6 +443,7 @@ export function createSaveController({
       wins: Number.isFinite(parsedSave.player.wins) ? Math.max(0, Math.round(parsedSave.player.wins)) : 0,
       maxMp: Number.isFinite(parsedSave.player.maxMp) ? Math.max(1, Math.round(parsedSave.player.maxMp)) : gameState.player.maxMp,
       activeIndex,
+      campCreatures,
       party
     };
     nextPlayer.mp = Number.isFinite(parsedSave.player.mp)
@@ -451,6 +471,11 @@ export function createSaveController({
     gameState.menu.mode = "main";
     gameState.menu.mainIndex = 0;
     gameState.menu.partyIndex = activeIndex;
+    gameState.campMenu.mode = "main";
+    gameState.campMenu.mainIndex = 0;
+    gameState.campMenu.storedIndex = 0;
+    gameState.campMenu.partyIndex = activeIndex;
+    gameState.campMenu.selectedStoredIndex = null;
     gameState.startMenu.index = 0;
     gameState.battle = null;
     gameState.cutscene = null;

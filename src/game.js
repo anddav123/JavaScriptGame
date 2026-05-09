@@ -4,12 +4,14 @@ import {
   CREATURE_MIN_LEVEL,
   CREATURE_XP_PER_LEVEL,
   INITIAL_PLAYER_MAX_MP,
+  PLAYER_PARTY_MAX_SIZE,
   PLAYER_MP_RECHARGE_AMOUNT,
   PLAYER_MP_RECHARGE_STEP_INTERVAL,
   TILE_SIZE
 } from "./constants.js";
 import { createAscensionCutsceneController } from "./ascensionCutscene.js";
 import { createBattleController } from "./battle.js";
+import { createCampMenuController } from "./campMenu.js";
 import { createCanvasUi } from "./canvasUi.js";
 import { cutscenes } from "./cutscenes.js";
 import { creatureTemplates, defaultMovesForLevel, MAX_CREATURE_MOVES } from "./creatures.js";
@@ -64,6 +66,13 @@ const gameState = {
     mainIndex: 0,
     partyIndex: 0
   },
+  campMenu: {
+    mode: "main",
+    mainIndex: 0,
+    storedIndex: 0,
+    partyIndex: 0,
+    selectedStoredIndex: null
+  },
   world: {
     currentMapId: "sunmeadow",
     camp: null,
@@ -82,6 +91,7 @@ const gameState = {
     mp: INITIAL_PLAYER_MAX_MP,
     mpRechargeStepProgress: 0,
     activeIndex: 0,
+    campCreatures: [],
     party: [
       createCreatureInstance("Cubling", { nickname: "Rory", role: "Starter", captured: true })
     ]
@@ -99,7 +109,8 @@ const worldController = createWorldController({
   setMessage,
   clamp,
   onPlayerStep: rechargePlayerMp,
-  onEncounter: () => battleController.beginEncounter()
+  onEncounter: () => battleController.beginEncounter(),
+  onCampInteract: () => openCampMenu()
 });
 
 const {
@@ -127,6 +138,22 @@ const {
   drawPlayer,
   preloadCreatureSprite
 } = spriteController;
+
+const {
+  drawCampMenuOverlay,
+  handleCampMenuNavigation,
+  openCampMenu
+} = createCampMenuController({
+  canvas,
+  ctx,
+  gameState,
+  setMessage,
+  clamp,
+  drawCreatureSprite,
+  drawRoundedRect,
+  drawText,
+  wrapText
+});
 
 const {
   drawMapTile
@@ -512,8 +539,8 @@ function drawWorld() {
 
   const elapsed = performance.now() - gameState.messageShownAt;
   let messageOpacity = 1;
-  if (elapsed > 4000) {
-    messageOpacity = Math.max(0, 1 - (elapsed - 4000) / 1000);
+  if (elapsed > 2000) {
+    messageOpacity = Math.max(0, 1 - (elapsed - 2000) / 1000);
   }
 
   if (messageOpacity > 0) {
@@ -531,7 +558,7 @@ function drawWorld() {
   drawText(getActiveCreature().nickname, canvas.width - 258, 44, { font: "14px 'Press Start 2P'" });
   drawText(`HP ${getActiveCreature().hp}/${getActiveCreature().maxHp}`, canvas.width - 258, 68, { font: "17px Outfit", color: "#2a7f62" });
   drawText(`MP ${gameState.player.mp}/${gameState.player.maxMp}`, canvas.width - 150, 68, { font: "17px Outfit", color: "#3d5afe" });
-  drawText(`Party ${gameState.player.party.length}`, canvas.width - 258, 90, { font: "17px Outfit" });
+  drawText(`Party ${gameState.player.party.length}/${PLAYER_PARTY_MAX_SIZE}`, canvas.width - 258, 90, { font: "17px Outfit" });
   drawText(`Orbs ${gameState.player.orbs}`, canvas.width - 150, 90, { font: "17px Outfit", color: "#9c6644" });
   drawText("Enter: Menu", canvas.width - 258, 112, { font: "15px Outfit", color: "#b93c2f" });
 }
@@ -624,6 +651,8 @@ function render() {
     drawWorld();
     if (gameState.scene === "menu") {
       drawMenuOverlay();
+    } else if (gameState.scene === "campMenu") {
+      drawCampMenuOverlay();
     }
   }
 
@@ -690,6 +719,14 @@ window.addEventListener("keydown", (event) => {
   if (gameState.scene === "menu") {
     if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
       handleMenuNavigation(key);
+      event.preventDefault();
+    }
+    return;
+  }
+
+  if (gameState.scene === "campMenu") {
+    if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
+      handleCampMenuNavigation(key);
       event.preventDefault();
     }
     return;

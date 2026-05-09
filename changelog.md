@@ -4,6 +4,9 @@ Project changes are recorded here by date. The README stays focused on what the 
 
 ## 2026-05-09
 
+- Added a five-creature party limit, with extra captured creatures sent to camp storage.
+- Added a camp interaction menu for resting or switching creatures between the active party and camp storage.
+- Persisted camp-stored creatures in JSON/database saves.
 - Refactored canvas helpers, start menu, in-game menu, world objects, and NPC logic out of `src/game.js`.
 - Added `src/worldObjects.js` for buildings, furniture, signs, and walk-on trigger rendering.
 - Added `src/nonPlayerCharacter.js` for NPC rendering, sprite loading, dialogue positioning, and patrol animation.

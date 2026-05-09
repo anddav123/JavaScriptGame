@@ -22,6 +22,7 @@ The browser game is loaded from `src/game.js`, which wires the shared game state
 - `src/game.js`: bootstrap, controller wiring, scene routing, input coordination, and top-level render loop
 - `src/ascensionCutscene.js`: runtime ascension cutscene state, sprite morph animation, and input advancement
 - `src/battleProgression.js`: battle XP, level-up, ascension, and move-learning rules
+- `src/campMenu.js`: camp rest and creature storage switching UI
 - `src/canvasUi.js`: shared canvas drawing helpers
 - `src/constants.js`: shared sprite, save, tile, MP, and creature progression constants
 - `src/creatures.js`: creature templates, starting moves, ascension rules, and enemy template setup
@@ -34,7 +35,7 @@ The browser game is loaded from `src/game.js`, which wires the shared game state
 - `src/worldObjects.js`: building, furniture, sign, and trigger rendering
 - `src/nonPlayerCharacter.js`: NPC sprite loading, patrol state, dialogue markers, and NPC-only smooth walking visuals
 - `src/battle.js`: encounter setup, turn flow, player actions, battle input, and battle drawing
-- `src/save.js`: database save flow, JSON export/import, save validation, and modal prompts
+- `src/save.js`: database save flow, JSON export/import, save validation, camp storage, and modal prompts
 - `src/sprites.js`: player and creature sprite loading, caching, preloading, fallback drawing, and sprite rendering
 - `src/story.js`: cutscene state, image loading, dialogue advancement, and cutscene rendering
 
@@ -59,6 +60,9 @@ For small refactors, prefer moving cohesive behavior into one of these modules b
 - Overworld steps restore 1 MP every 2 successful steps until full
 - `MP +1` in battle restores 1 MP and forfeits the player's turn
 - If no creature move can be afforded, the player turn is skipped and 1 MP is recovered
+- The player party is capped at 5 creatures
+- Captures beyond the party cap are stored in `player.campCreatures`
+- Interacting with camp opens a menu to rest or swap stored creatures with party creatures
 - Creature move costs are defined in `src/moves.js`; non-damage moves default to 2 MP
 - Winning battles grants 2 XP to the active creature
 - Every 10 XP grants 1 level, up to level 100
@@ -78,6 +82,7 @@ There is no package-managed test runner yet, but individual JavaScript modules c
 node --check src/game.js
 node --check src/battle.js
 node --check src/battleProgression.js
+node --check src/campMenu.js
 ```
 
 ## PHP/MySQL backend
