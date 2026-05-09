@@ -137,14 +137,16 @@ export function createStartMenuController({
       });
     });
 
-    drawRoundedRect(504, 314, 332, 176, 20, "rgba(255, 248, 238, 0.9)", "#1c2634");
+    drawRoundedRect(504, 314, 330, 190, 20, "rgba(255, 248, 238, 0.9)", "#1c2634");
     drawText("Controls", 540, 350, { font: "15px 'Press Start 2P'", color: "#1c2634" });
     drawText("Move", 540, 392, { font: "20px Outfit", color: "#694435" });
     drawText("WASD / Arrow Keys", 800, 392, { font: "20px Outfit", color: "#2d1b14", align: "right" });
-    drawText("Select", 540, 430, { font: "20px Outfit", color: "#694435" });
-    drawText("Enter / Click", 800, 430, { font: "20px Outfit", color: "#2d1b14", align: "right" });
-    drawText("Fullscreen", 540, 468, { font: "20px Outfit", color: "#694435" });
-    drawText("F", 800, 468, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+    drawText("Select", 540, 422, { font: "20px Outfit", color: "#694435" });
+    drawText("Enter / Click", 800, 422, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+    drawText("Interact", 540, 452, { font: "20px Outfit", color: "#694435" });
+    drawText("Spacebar", 800, 452, { font: "20px Outfit", color: "#2d1b14", align: "right" });
+    drawText("Fullscreen", 540, 482, { font: "20px Outfit", color: "#694435" });
+    drawText("F", 800, 482, { font: "20px Outfit", color: "#2d1b14", align: "right" });
 
     drawRoundedRect(104, 522, 752, 34, 14, "rgba(28, 38, 52, 0.58)");
     drawText("Start fresh, load from database, or import a JSON backup.", 480, 544, {
