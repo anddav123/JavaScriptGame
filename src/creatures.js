@@ -1,3 +1,5 @@
+import { creatureTypes, getTypeColor } from "./types.js";
+
 export const MAX_CREATURE_MOVES = 4;
 
 export const creatureTemplates = {
@@ -5,13 +7,15 @@ export const creatureTemplates = {
     species: "Cubling",
     nickname: "Cubling",
     color: "#4d9a63",
+    type: creatureTypes.NATURE,
     spritePath: "assets/creatures/png/cubling-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/cubling-sprite.svg",
     role: "Starter",
     maxHp: 42,
-    moves: ["vineSnap", "focus"],
+    moves: ["natureVineWhip", "focus"],
     learnset: [
       { level: 5, move: "leafNeedle" },
+      { level: 8, move: "vineSnap"},
       { level: 12, move: "rootJab" },
       { level: 18, move: "thornBurst" }
     ],
@@ -22,6 +26,7 @@ export const creatureTemplates = {
     species: "Dandelio",
     nickname: "Dandelio",
     color: "#4d9a63",
+    type: creatureTypes.NATURE,
     spritePath: "assets/creatures/png/dandelio-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/dandelio-sprite.svg",
     role: "Wildling",
@@ -31,6 +36,7 @@ export const creatureTemplates = {
       { level: 20, move: "thornBurst" },
       { level: 28, move: "brambleCrash" },
       { level: 36, move: "petalCyclone" },
+      { level: 40, move: "natureRootSnare"},
       { level: 44, move: "heal" }
     ],
     ascension: { level: 50, species: "Folio" },
@@ -40,6 +46,7 @@ export const creatureTemplates = {
     species: "Folio",
     nickname: "Folio",
     color: "#4d9a63",
+    type: creatureTypes.NATURE,
     spritePath: "assets/creatures/png/folio-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/folio-sprite.svg",
     role: "Wildling",
@@ -50,7 +57,8 @@ export const creatureTemplates = {
       { level: 62, move: "brambleCrash" },
       { level: 74, move: "starfall" },
       { level: 88, move: "sunflare" },
-      { level: 100, move: "heal" }
+      { level: 90, move: "natureTimberSlam" },
+      { level: 95, move: "natureVerdantRoar"}
     ],
     description: "The leafy king of the grassy plains, ruling the meadows with quiet strength."
   },
@@ -58,6 +66,7 @@ export const creatureTemplates = {
     species: "Scorcha",
     nickname: "Scorcha",
     color: "#d15b38",
+    type: creatureTypes.FIRE,
     spritePath: "assets/creatures/png/scorcha-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/scorcha-sprite.svg",
     role: "Wildling",
@@ -76,12 +85,12 @@ export const creatureTemplates = {
   Sproutrunk: {
     species: "Sproutrunk",
     nickname: "Sproutrunk",
-    color: "#4d9a63",
+    type: creatureTypes.NATURE,
     spritePath: "assets/creatures/png/sproutrunk-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/sproutrunk-sprite.svg",
     role: "Wildling",
     maxHp: 58,
-    moves: ["ember", "vineSnap", "focus", "heal"],
+    moves: ["natureMossShot","vineSnap", "focus", "heal"],
     learnset: [
       { level: 8, move: "rootJab" },
       { level: 16, move: "flareBite" },
@@ -94,6 +103,7 @@ export const creatureTemplates = {
     species: "Roselle",
     nickname: "Roselle",
     color: "#fc8ccd",
+    type: creatureTypes.NATURE,
     spritePath: "assets/creatures/png/roselle-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/roselle-sprite.svg",
     role: "Wildling",
@@ -111,7 +121,7 @@ export const creatureTemplates = {
   Lilphant: {
     species: "Lilphant",
     nickname: "Lilphant",
-    color: "#4d77b4",
+    type: creatureTypes.WATER,
     spritePath: "assets/creatures/png/lilphant-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/lilphant-sprite.svg",
     role: "Wildling",
@@ -130,7 +140,7 @@ export const creatureTemplates = {
   Pluma: {
     species: "Pluma",
     nickname: "Pluma",
-    color: "#70b7d9",
+    type: creatureTypes.FLYING,
     spritePath: "assets/creatures/png/pluma-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/pluma-sprite.svg",
     role: "Wildling",
@@ -145,7 +155,7 @@ export const creatureTemplates = {
   Swiftwing: {
     species: "Swiftwing",
     nickname: "Swiftwing",
-    color: "#4f9fd8",
+    type: creatureTypes.FLYING,
     spritePath: "assets/creatures/png/swiftwing-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/swiftwing-sprite.svg",
     role: "Wildling",
@@ -161,7 +171,7 @@ export const creatureTemplates = {
   Azuldove: {
     species: "Azuldove",
     nickname: "Azuldove",
-    color: "#3f83c7",
+    type: creatureTypes.FLYING,
     spritePath: "assets/creatures/png/azuldove-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/azuldove-sprite.svg",
     role: "Wildling",
@@ -179,7 +189,7 @@ export const creatureTemplates = {
   Buzzybee: {
     species: "Buzzybee",
     nickname: "Buzzybee",
-    color: "#f8ff95",
+    type: creatureTypes.LIGHTNING,
     spritePath: "assets/creatures/png/buzzybee-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/buzzybee-sprite.svg",
     role: "Wildling",
@@ -198,7 +208,7 @@ export const creatureTemplates = {
   Zapbee: {
     species: "Zapbee",
     nickname: "Zapbee",
-    color: "#f8ff95",
+    type: creatureTypes.LIGHTNING,
     spritePath: "assets/creatures/png/zapbee-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/zapbee-sprite.svg",
     role: "Wildling",
@@ -215,7 +225,7 @@ export const creatureTemplates = {
   Electrabee: {
     species: "Electrabee",
     nickname: "Electrabee",
-    color: "#f8ff95",
+    type: creatureTypes.LIGHTNING,
     spritePath: "assets/creatures/png/electrabee-sprite.png",
     fallbackSpritePath: "assets/creatures/svg/electrabee-sprite.svg",
     role: "Wildling",
@@ -257,8 +267,9 @@ export const enemyTemplates = Object.values(creatureTemplates)
   .filter((creature) => creature.role !== "Starter")
   .map((creature) => ({
     name: creature.species,
-    color: creature.color,
+    color: creature.color ?? getTypeColor(creature.type),
     spritePath: creature.spritePath,
+    type: creature.type,
     maxHp: creature.maxHp,
     moves: creature.moves
   }));

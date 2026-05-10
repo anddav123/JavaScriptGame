@@ -27,6 +27,7 @@ import { createStoryController } from "./story.js";
 import { createTileRenderer } from "./tiles.js";
 import { createWorldController } from "./world.js";
 import { createWorldObjectRenderer } from "./worldObjects.js";
+import { getTypeColor } from "./types.js";
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -310,7 +311,8 @@ function createCreatureInstance(species, overrides = {}) {
   return {
     species: template.species,
     nickname: overrides.nickname || template.nickname,
-    color: template.color,
+    color: template.color ?? getTypeColor(template.type),
+    type: template.type,
     spritePath: template.spritePath,
     fallbackSpritePath: template.fallbackSpritePath,
     role: overrides.role || template.role,
@@ -394,6 +396,8 @@ function recoverPartyAfterFainting({ recoveryPoint, outcomeMessage }) {
   for (const creature of gameState.player.party) {
     creature.hp = creature.maxHp;
   }
+  gameState.player.mp = gameState.player.maxMp;
+  gameState.player.mpRechargeStepProgress = 0;
 
   gameState.world.currentMapId = recoveryPoint.mapId;
   gameState.player.x = recoveryPoint.x;

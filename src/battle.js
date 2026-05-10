@@ -12,6 +12,7 @@ import {
 } from "./constants.js";
 import { createBattleProgressionController } from "./battleProgression.js";
 import { getMoveCost, moveCatalog } from "./moves.js";
+import { getTypeColor, typeEffectiveness } from "./types.js";
 
 export function createBattleController({
   canvas,
@@ -220,9 +221,17 @@ export function createBattleController({
       return;
     }
 
-    const damage = Math.max(5, move.power + attacker.attackBoost + Math.floor(Math.random() * 5) - 2);
+    const baseDamage = Math.max(5, move.power + attacker.attackBoost + Math.floor(Math.random() * 5) - 2);
+    const effectiveness = typeEffectiveness(move.type, defender.type);
+    const damage = Math.max(1, Math.round(baseDamage * effectiveness.multiplier));
     defender.hp = clamp(defender.hp - damage, 0, defender.maxHp);
     writeBattleLog(`${attacker.nickname || attacker.name} used ${move.name} for ${damage} damage.`);
+
+    if (effectiveness.label === "strong") {
+      writeBattleLog("It was effective.");
+    } else if (effectiveness.label === "weak") {
+      writeBattleLog("It was resisted.");
+    }
 
     if (defender.hp === 0) {
       writeBattleLog(`${defender.nickname || defender.name} was defeated.`);
@@ -341,6 +350,8 @@ export function createBattleController({
         for (const creature of gameState.player.party) {
           creature.hp = creature.maxHp;
         }
+        gameState.player.mp = gameState.player.maxMp;
+        gameState.player.mpRechargeStepProgress = 0;
         gameState.world.currentMapId = recoveryPoint.mapId;
         gameState.player.x = recoveryPoint.x;
         gameState.player.y = recoveryPoint.y;
@@ -620,6 +631,7 @@ export function createBattleController({
       color: "#694435",
       align: "right"
     });
+    drawText(battle.enemy.type ?? "Unknown", 78, 126, { font: "14px Outfit", color: "#694435" });
     drawText(activeCreature.nickname, 650, 264, { font: "14px 'Press Start 2P'" });
     drawHpBar(78, 68, 220, battle.enemy.hp, battle.enemy.maxHp, "#d96459");
     drawHpBar(650, 284, 220, activeCreature.hp, activeCreature.maxHp, "#2a9d8f");
@@ -635,6 +647,7 @@ export function createBattleController({
       color: "#694435",
       align: "right"
     });
+    drawText(activeCreature.type ?? "Unknown", 650, 342, { font: "14px Outfit", color: "#694435" });
 
     ctx.fillStyle = battle.enemy.color;
     ctx.beginPath();
@@ -683,7 +696,7 @@ export function createBattleController({
       const isSelected = index === battle.selectionIndex;
 
       const fill = button.type === "move"
-        ? canAffordMove ? move.color : "#8d8178"
+        ? canAffordMove ? move.color ?? getTypeColor(move.type) : "#8d8178"
         : button.type === "tonic"
           ? "#2a9d8f"
           : button.type === "catch"
@@ -718,10 +731,10 @@ export function createBattleController({
 
       if (button.type === "move") {
         drawText(
-          `${moveCost} MP`,
+          `${moveCost} MP · ${move.type ?? "Typeless"}`,
           button.x + 16,
           button.y + 45,
-          { font: "14px Outfit", color: canAffordMove ? "#fff8f0" : "#f3d1c3" }
+          { font: "13px Outfit", color: canAffordMove ? "#fff8f0" : "#f3d1c3" }
         );
       }
 

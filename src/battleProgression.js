@@ -11,6 +11,7 @@ import {
   CREATURE_XP_PER_WIN
 } from "./constants.js";
 import { getMoveCost, moveCatalog } from "./moves.js";
+import { getTypeColor } from "./types.js";
 
 export function createBattleProgressionController({
   gameState,
@@ -49,7 +50,8 @@ export function createBattleProgressionController({
       species,
       name: creature.name || species,
       nickname: creature.nickname || species,
-      color: creature.color,
+      color: creature.color ?? getTypeColor(creature.type),
+      type: creature.type,
       spritePath: creature.spritePath,
       fallbackSpritePath: creature.fallbackSpritePath,
       role: creature.role,
@@ -116,7 +118,7 @@ export function createBattleProgressionController({
       : move.heal
         ? `heals ${move.heal} HP`
         : "support";
-    return `${move.name} — ${effect}, ${getMoveCost(move)} MP`;
+    return `${move.name} — ${move.type ?? "Typeless"}, ${effect}, ${getMoveCost(move)} MP`;
   }
 
   function teachMoveIfPossible(creature, moveId) {
@@ -160,7 +162,8 @@ export function createBattleProgressionController({
     }
 
     creature.species = targetTemplate.species;
-    creature.color = targetTemplate.color;
+    creature.color = targetTemplate.color ?? getTypeColor(targetTemplate.type);
+    creature.type = targetTemplate.type;
     creature.spritePath = targetTemplate.spritePath;
     creature.fallbackSpritePath = targetTemplate.fallbackSpritePath;
     creature.maxHp = Math.max(creature.maxHp, targetMaxHp);

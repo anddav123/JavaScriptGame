@@ -169,7 +169,7 @@ export function createMenuController({
       radius: 30
     });
     drawText(viewedCreature.nickname, 516, 300, { font: "14px 'Press Start 2P'" });
-    drawText(viewedCreature.species, 516, 332, { font: "20px Outfit", color: "#694435" });
+    drawText(`${viewedCreature.species} · ${viewedCreature.type ?? "Unknown"}`, 516, 332, { font: "20px Outfit", color: "#694435" });
     drawText(`Level ${viewedCreature.level}  XP ${xpProgress}`, 516, 360, { font: "18px Outfit", color: "#2a7f62" });
     drawText(`Role: ${viewedCreature.role}`, 516, 388, { font: "17px Outfit", color: "#694435" });
     drawText(`Moves: ${viewedCreature.moves.map((moveId) => moveCatalog[moveId].name).join(", ")}`, 516, 420, {

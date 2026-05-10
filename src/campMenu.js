@@ -273,7 +273,7 @@ export function createCampMenuController({
       radius: 28
     });
     drawText(creature.nickname, x + 30, y + 178, { font: "13px 'Press Start 2P'" });
-    drawText(creature.species, x + 30, y + 208, { font: "19px Outfit", color: "#694435" });
+    drawText(`${creature.species} · ${creature.type ?? "Unknown"}`, x + 30, y + 208, { font: "19px Outfit", color: "#694435" });
     drawText(`Level ${creature.level}  XP ${xpProgress(creature)}`, x + 30, y + 234, {
       font: "17px Outfit",
       color: "#2a7f62"
