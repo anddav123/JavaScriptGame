@@ -14,6 +14,19 @@ import { createBattleProgressionController } from "./battleProgression.js";
 import { getMoveCost, moveCatalog } from "./moves.js";
 import { getTypeColor, typeEffectiveness } from "./types.js";
 
+const BATTLE_SPRITE_BOUNDS = Object.freeze({
+  enemy: { x: 664, y: 24, width: 118, height: 132 },
+  player: { x: 168, y: 160, width: 148, height: 164 }
+});
+
+const DEFAULT_BATTLE_ANIMATION_DURATION = 700;
+const DEFAULT_BATTLE_TURN_DELAY = 700;
+const CAPTURE_SUCCESS_ANIMATION_DURATION = 1000;
+const CAPTURE_BREAK_ANIMATION_DURATION = 800;
+const CAPTURE_ORB_COLOR = "#3d8bfd";
+const TONIC_ANIMATION_DURATION = 850;
+const TONIC_LIQUID_COLOR = "#8e44ad";
+
 export function createBattleController({
   canvas,
   ctx,
@@ -76,6 +89,331 @@ export function createBattleController({
     gameState.battle.log = gameState.battle.log.slice(0, 5);
   }
 
+  function battleAnimationTargetForOwner(owner) {
+    return owner === "player" ? "enemy" : "player";
+  }
+
+  function battleAnimationUserForOwner(owner) {
+    return owner === "player" ? "player" : "enemy";
+  }
+
+  function startBattleAnimation(move, target, animationType = move.animation ?? "impact") {
+    const battle = gameState.battle;
+    if (!battle) return 0;
+
+    const duration = move.animationDuration ?? DEFAULT_BATTLE_ANIMATION_DURATION;
+    battle.animations ??= [];
+    battle.animations.push({
+      type: animationType,
+      target,
+      color: move.color ?? getTypeColor(move.type, "#fff8f0"),
+      startedAt: performance.now(),
+      duration
+    });
+
+    return duration;
+  }
+
+  function startCaptureAnimation(outcome) {
+    const battle = gameState.battle;
+    if (!battle) return 0;
+
+    const duration = outcome === "success" ? CAPTURE_SUCCESS_ANIMATION_DURATION : CAPTURE_BREAK_ANIMATION_DURATION;
+    battle.animations ??= [];
+    battle.animations.push({
+      type: "capture",
+      target: "enemy",
+      outcome,
+      color: CAPTURE_ORB_COLOR,
+      startedAt: performance.now(),
+      duration
+    });
+
+    return duration;
+  }
+
+  function startTonicAnimation() {
+    const battle = gameState.battle;
+    if (!battle) return 0;
+
+    battle.animations ??= [];
+    battle.animations.push({
+      type: "tonic",
+      target: "player",
+      color: TONIC_LIQUID_COLOR,
+      startedAt: performance.now(),
+      duration: TONIC_ANIMATION_DURATION
+    });
+
+    return TONIC_ANIMATION_DURATION;
+  }
+
+  function activeCaptureSuccessAnimation() {
+    const battle = gameState.battle;
+    const now = performance.now();
+    return battle?.animations?.find((animation) => {
+      if (animation.type !== "capture" || animation.outcome !== "success") return false;
+      const duration = Math.max(1, animation.duration ?? CAPTURE_SUCCESS_ANIMATION_DURATION);
+      return now - animation.startedAt < duration;
+    });
+  }
+
+  function drawImpactAnimation(animation, bounds, elapsedRatio) {
+    const centerX = bounds.x + bounds.width / 2;
+    const centerY = bounds.y + bounds.height / 2;
+    const maxRadius = Math.max(bounds.width, bounds.height) * 0.48;
+    const radius = 10 + maxRadius * elapsedRatio;
+    const opacity = 1 - elapsedRatio;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.strokeStyle = animation.color;
+    ctx.lineWidth = 6 - elapsedRatio * 3;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.globalAlpha = opacity * 0.85;
+    ctx.fillStyle = animation.color;
+    for (let index = 0; index < 8; index += 1) {
+      const angle = (Math.PI * 2 * index) / 8;
+      const distance = radius * 0.72;
+      const particleSize = 6 - elapsedRatio * 3;
+      ctx.beginPath();
+      ctx.arc(
+        centerX + Math.cos(angle) * distance,
+        centerY + Math.sin(angle) * distance,
+        particleSize,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+    }
+
+    ctx.globalAlpha = opacity * 0.35;
+    ctx.fillStyle = animation.color;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius * 0.42, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawShieldAnimation(animation, bounds, elapsedRatio) {
+    const centerX = bounds.x + bounds.width / 2;
+    const centerY = bounds.y + bounds.height / 2;
+    const width = bounds.width * (0.58 + elapsedRatio * 0.16);
+    const height = bounds.height * (0.68 + elapsedRatio * 0.12);
+    const topY = centerY - height * 0.5;
+    const opacity = 1 - elapsedRatio;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.strokeStyle = animation.color;
+    ctx.fillStyle = animation.color;
+    ctx.lineWidth = 5 - elapsedRatio * 2;
+    ctx.beginPath();
+    ctx.moveTo(centerX, topY);
+    ctx.quadraticCurveTo(centerX + width * 0.44, topY + height * 0.08, centerX + width * 0.42, topY + height * 0.42);
+    ctx.quadraticCurveTo(centerX + width * 0.36, topY + height * 0.78, centerX, topY + height);
+    ctx.quadraticCurveTo(centerX - width * 0.36, topY + height * 0.78, centerX - width * 0.42, topY + height * 0.42);
+    ctx.quadraticCurveTo(centerX - width * 0.44, topY + height * 0.08, centerX, topY);
+    ctx.closePath();
+    ctx.stroke();
+
+    ctx.globalAlpha = opacity * 0.16;
+    ctx.fill();
+
+    ctx.globalAlpha = opacity * 0.65;
+    for (let index = 0; index < 3; index += 1) {
+      const shimmerY = topY + height * (0.28 + index * 0.18) - elapsedRatio * 18;
+      ctx.beginPath();
+      ctx.moveTo(centerX - width * 0.22, shimmerY);
+      ctx.lineTo(centerX + width * 0.22, shimmerY - 12);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawHeartShape(x, y, size) {
+    ctx.beginPath();
+    ctx.moveTo(x, y + size * 0.32);
+    ctx.bezierCurveTo(x - size, y - size * 0.22, x - size * 0.62, y - size, x, y - size * 0.42);
+    ctx.bezierCurveTo(x + size * 0.62, y - size, x + size, y - size * 0.22, x, y + size * 0.32);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawHeartsAnimation(animation, bounds, elapsedRatio) {
+    const centerX = bounds.x + bounds.width / 2;
+    const centerY = bounds.y + bounds.height / 2;
+    const opacity = 1 - elapsedRatio;
+    const orbitRadiusX = bounds.width * 0.38;
+    const orbitRadiusY = bounds.height * 0.32;
+    const rotation = elapsedRatio * Math.PI * 2;
+
+    ctx.save();
+    ctx.fillStyle = animation.color;
+    for (let index = 0; index < 6; index += 1) {
+      const angle = rotation + (Math.PI * 2 * index) / 6;
+      const bob = Math.sin(elapsedRatio * Math.PI + index) * 8;
+      const x = centerX + Math.cos(angle) * orbitRadiusX;
+      const y = centerY + Math.sin(angle) * orbitRadiusY - elapsedRatio * 24 + bob;
+      const size = 8 + Math.sin(elapsedRatio * Math.PI) * 5;
+
+      ctx.globalAlpha = opacity * (0.55 + index * 0.055);
+      drawHeartShape(x, y, size);
+    }
+
+    ctx.globalAlpha = opacity * 0.18;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, bounds.width * (0.24 + elapsedRatio * 0.12), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawTonicAnimation(animation, bounds, elapsedRatio) {
+    const beakerWidth = 42;
+    const beakerHeight = 64;
+    const x = bounds.x + bounds.width * 0.68;
+    const y = bounds.y + bounds.height * 0.08;
+    const opacity = elapsedRatio < 0.82 ? 1 : 1 - (elapsedRatio - 0.82) / 0.18;
+    const liquidRatio = Math.max(0, 1 - elapsedRatio * 1.08);
+    const liquidHeight = (beakerHeight - 16) * liquidRatio;
+    const liquidY = y + beakerHeight - 8 - liquidHeight;
+
+    ctx.save();
+    ctx.globalAlpha = opacity;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = "#fff8f0";
+    ctx.fillStyle = "rgba(255, 248, 240, 0.22)";
+
+    ctx.beginPath();
+    ctx.moveTo(x + 12, y + 4);
+    ctx.lineTo(x + 30, y + 4);
+    ctx.lineTo(x + 30, y + 16);
+    ctx.lineTo(x + 38, y + beakerHeight - 6);
+    ctx.quadraticCurveTo(x + beakerWidth / 2, y + beakerHeight + 2, x + 4, y + beakerHeight - 6);
+    ctx.lineTo(x + 12, y + 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = animation.color;
+    ctx.globalAlpha = opacity * 0.82;
+    ctx.beginPath();
+    ctx.moveTo(x + 8, liquidY);
+    ctx.quadraticCurveTo(x + beakerWidth / 2, liquidY - Math.sin(elapsedRatio * Math.PI * 8) * 3, x + 34, liquidY);
+    ctx.lineTo(x + 36, y + beakerHeight - 8);
+    ctx.quadraticCurveTo(x + beakerWidth / 2, y + beakerHeight - 1, x + 6, y + beakerHeight - 8);
+    ctx.closePath();
+    ctx.fill();
+
+    if (elapsedRatio > 0.64) {
+      const sparkleRatio = (elapsedRatio - 0.64) / 0.36;
+      ctx.globalAlpha = (1 - sparkleRatio) * 0.9;
+      ctx.fillStyle = animation.color;
+      for (let index = 0; index < 5; index += 1) {
+        const angle = (Math.PI * 2 * index) / 5;
+        const distance = 20 + sparkleRatio * 22;
+        ctx.beginPath();
+        ctx.arc(
+          bounds.x + bounds.width / 2 + Math.cos(angle) * distance,
+          bounds.y + bounds.height / 2 + Math.sin(angle) * distance,
+          4,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function drawCaptureAnimation(animation, bounds, elapsedRatio) {
+    const centerX = bounds.x + bounds.width / 2;
+    const centerY = bounds.y + bounds.height / 2;
+    const maxRadius = Math.max(bounds.width, bounds.height) * 0.58;
+    const pulse = Math.sin(elapsedRatio * Math.PI * 4) * 5;
+    const isSuccess = animation.outcome === "success";
+    const radius = isSuccess
+      ? maxRadius * (1 - Math.max(0, elapsedRatio - 0.28) / 0.72) + 8
+      : maxRadius + pulse;
+    const opacity = isSuccess ? 1 - elapsedRatio * 0.18 : 1 - elapsedRatio * 0.35;
+
+    ctx.save();
+    ctx.strokeStyle = animation.color;
+    ctx.fillStyle = animation.color;
+    ctx.lineWidth = 6;
+
+    if (isSuccess) {
+      ctx.globalAlpha = opacity * 0.22;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, Math.max(8, radius), 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.globalAlpha = opacity;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, Math.max(8, radius), 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.globalAlpha = Math.min(1, elapsedRatio * 1.4) * 0.85;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, Math.max(5, radius * 0.32), 0, Math.PI * 2);
+      ctx.fill();
+    } else if (elapsedRatio < 0.55) {
+      ctx.globalAlpha = opacity;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      const breakRatio = (elapsedRatio - 0.55) / 0.45;
+      ctx.globalAlpha = 1 - breakRatio;
+      for (let index = 0; index < 10; index += 1) {
+        const angle = (Math.PI * 2 * index) / 10;
+        const shardDistance = maxRadius * (0.88 + breakRatio * 0.72);
+        const shardX = centerX + Math.cos(angle) * shardDistance;
+        const shardY = centerY + Math.sin(angle) * shardDistance;
+        ctx.beginPath();
+        ctx.moveTo(centerX + Math.cos(angle) * maxRadius * 0.74, centerY + Math.sin(angle) * maxRadius * 0.74);
+        ctx.lineTo(shardX, shardY);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function drawBattleAnimations() {
+    const battle = gameState.battle;
+    if (!battle?.animations?.length) return;
+
+    const now = performance.now();
+    battle.animations = battle.animations.filter((animation) => {
+      const duration = Math.max(1, animation.duration ?? DEFAULT_BATTLE_ANIMATION_DURATION);
+      const elapsedRatio = (now - animation.startedAt) / duration;
+      if (elapsedRatio >= 1) return false;
+
+      const bounds = BATTLE_SPRITE_BOUNDS[animation.target];
+      if (!bounds) return false;
+
+      const clampedRatio = clamp(elapsedRatio, 0, 1);
+      if (animation.type === "impact") {
+        drawImpactAnimation(animation, bounds, clampedRatio);
+      } else if (animation.type === "shield") {
+        drawShieldAnimation(animation, bounds, clampedRatio);
+      } else if (animation.type === "hearts") {
+        drawHeartsAnimation(animation, bounds, clampedRatio);
+      } else if (animation.type === "capture") {
+        drawCaptureAnimation(animation, bounds, clampedRatio);
+      } else if (animation.type === "tonic") {
+        drawTonicAnimation(animation, bounds, clampedRatio);
+      }
+
+      return true;
+    });
+  }
+
   const {
     activeMoveLearningPrompt,
     awardCreatureWinProgress,
@@ -94,11 +432,11 @@ export function createBattleController({
 
   function attemptCatch() {
     const battle = gameState.battle;
-    if (!battle) return false;
+    if (!battle) return { attempted: false, animationDuration: 0 };
 
     if (gameState.player.orbs <= 0) {
       writeBattleLog("No capture orbs left.");
-      return false;
+      return { attempted: false, animationDuration: 0 };
     }
 
     gameState.player.orbs -= 1;
@@ -107,21 +445,18 @@ export function createBattleController({
       .some((creature) => creature.species === enemy.name);
     const healthRatio = enemy.hp / enemy.maxHp;
     const catchChance = clamp(0.2 + (1 - healthRatio) * 0.65 + (alreadyOwned ? -0.08 : 0.05), 0.12, 0.92);
+    const captured = Math.random() <= catchChance;
+    const animationDuration = startCaptureAnimation(captured ? "success" : "break");
 
-    writeBattleLog(`You threw an capture orb at ${enemy.name}.`);
+    battle.turn = "capturing";
+    writeBattleLog(`You threw a capture orb at ${enemy.name}.`);
 
-    if (Math.random() <= catchChance) {
-      const captureResult = captureCreature(enemy.name);
-      writeBattleLog(`${enemy.name} was captured.`);
-      gameState.battle = null;
-      if (captureResult !== "storageFull") {
-        gameState.scene = "world";
-      }
-      return true;
-    }
-
-    writeBattleLog(`${enemy.name} broke free.`);
-    return false;
+    return {
+      attempted: true,
+      captured,
+      species: enemy.name,
+      animationDuration
+    };
   }
 
   function wildEncounterPool() {
@@ -170,6 +505,7 @@ export function createBattleController({
       afterBattleMessages: [],
       afterBattleAscensions: [],
       afterBattleLearnMoves: [],
+      animations: [],
       buttons: [],
       selectionIndex: 0
     };
@@ -206,19 +542,21 @@ export function createBattleController({
     const move = moveCatalog[moveId];
     if (Math.random() > move.accuracy) {
       writeBattleLog(`${attacker.nickname || attacker.name}'s ${move.name} missed.`);
-      return;
+      return { hit: false, animationDuration: 0 };
     }
 
     if (move.heal) {
       attacker.hp = clamp(attacker.hp + move.heal, 0, attacker.maxHp);
       writeBattleLog(`${attacker.nickname || attacker.name} restored ${move.heal} HP with ${move.name}.`);
-      return;
+      const animationDuration = startBattleAnimation(move, battleAnimationUserForOwner(owner), move.animation ?? "hearts");
+      return { hit: true, animationDuration };
     }
 
     if (move.buff) {
       attacker.attackBoost += move.buff;
       writeBattleLog(`${attacker.nickname || attacker.name} sharpened focus. Attack rose.`);
-      return;
+      const animationDuration = startBattleAnimation(move, battleAnimationUserForOwner(owner), move.animation ?? "shield");
+      return { hit: true, animationDuration };
     }
 
     const baseDamage = Math.max(5, move.power + attacker.attackBoost + Math.floor(Math.random() * 5) - 2);
@@ -226,6 +564,7 @@ export function createBattleController({
     const damage = Math.max(1, Math.round(baseDamage * effectiveness.multiplier));
     defender.hp = clamp(defender.hp - damage, 0, defender.maxHp);
     writeBattleLog(`${attacker.nickname || attacker.name} used ${move.name} for ${damage} damage.`);
+    const animationDuration = startBattleAnimation(move, battleAnimationTargetForOwner(owner));
 
     if (effectiveness.label === "strong") {
       writeBattleLog("It was effective.");
@@ -239,6 +578,8 @@ export function createBattleController({
         gameState.player.wins += 1;
       }
     }
+
+    return { hit: true, animationDuration };
   }
 
   function skipPlayerTurnForMp() {
@@ -373,7 +714,8 @@ export function createBattleController({
   }
 
   function enemyTurn() {
-    const { enemy } = gameState.battle;
+    const battle = gameState.battle;
+    const { enemy } = battle;
     const activeCreature = getActiveCreature();
     if (enemy.hp <= 0 || activeCreature.hp <= 0) {
       resolveBattleOutcome();
@@ -381,14 +723,19 @@ export function createBattleController({
     }
 
     const moveId = randomMoveId(enemy.moves);
-    applyMove(enemy, activeCreature, moveId, "enemy");
+    const moveResult = applyMove(enemy, activeCreature, moveId, "enemy");
+    const nextTurnDelay = moveResult?.animationDuration || 0;
 
-    if (activeCreature.hp <= 0) {
-      resolveBattleOutcome();
-      return;
-    }
+    setTimeout(() => {
+      if (gameState.battle !== battle) return;
 
-    beginPlayerTurn();
+      if (activeCreature.hp <= 0) {
+        resolveBattleOutcome();
+        return;
+      }
+
+      beginPlayerTurn();
+    }, nextTurnDelay);
   }
 
   function playerAction(action) {
@@ -404,7 +751,7 @@ export function createBattleController({
         return;
       }
       gameState.player.mp = clamp(gameState.player.mp - moveCost, 0, gameState.player.maxMp);
-      applyMove(activeCreature, battle.enemy, action.moveId, "player");
+      action.moveResult = applyMove(activeCreature, battle.enemy, action.moveId, "player");
     } else if (action.type === "tonic") {
       if (gameState.player.potions <= 0) {
         writeBattleLog("No tonics left.");
@@ -413,10 +760,31 @@ export function createBattleController({
       gameState.player.potions -= 1;
       activeCreature.hp = clamp(activeCreature.hp + 20, 0, activeCreature.maxHp);
       writeBattleLog(`${activeCreature.nickname} used a health tonic.`);
+      action.moveResult = { animationDuration: startTonicAnimation() };
     } else if (action.type === "catch") {
-      if (attemptCatch()) {
+      const catchResult = attemptCatch();
+      if (!catchResult.attempted) {
         return;
       }
+
+      setTimeout(() => {
+        if (gameState.battle !== battle) return;
+
+        if (catchResult.captured) {
+          const captureResult = captureCreature(catchResult.species);
+          writeBattleLog(`${catchResult.species} was captured.`);
+          gameState.battle = null;
+          if (captureResult !== "storageFull") {
+            gameState.scene = "world";
+          }
+          return;
+        }
+
+        writeBattleLog(`${catchResult.species} broke free.`);
+        battle.turn = "enemy";
+        setTimeout(enemyTurn, DEFAULT_BATTLE_TURN_DELAY);
+      }, catchResult.animationDuration);
+      return;
     } else if (action.type === "recoverMp") {
       if (!recoverMpForTurn(activeCreature)) {
         return;
@@ -431,13 +799,19 @@ export function createBattleController({
       writeBattleLog("Couldn't escape!");
     }
 
+    const nextTurnDelay = action.moveResult?.animationDuration || DEFAULT_BATTLE_TURN_DELAY;
+
     if (battle.enemy.hp <= 0 || activeCreature.hp <= 0) {
-      resolveBattleOutcome();
+      setTimeout(() => {
+        if (gameState.battle === battle) {
+          resolveBattleOutcome();
+        }
+      }, action.moveResult?.animationDuration || 0);
       return;
     }
 
     battle.turn = "enemy";
-    setTimeout(enemyTurn, 600);
+    setTimeout(enemyTurn, nextTurnDelay);
   }
 
   function battleButtons() {
@@ -649,6 +1023,14 @@ export function createBattleController({
     });
     drawText(activeCreature.type ?? "Unknown", 650, 342, { font: "14px Outfit", color: "#694435" });
 
+    const captureSuccessAnimation = activeCaptureSuccessAnimation();
+    const captureElapsedRatio = captureSuccessAnimation
+      ? clamp((performance.now() - captureSuccessAnimation.startedAt) / captureSuccessAnimation.duration, 0, 1)
+      : 0;
+    const enemySpriteOpacity = captureSuccessAnimation ? Math.max(0, 1 - captureElapsedRatio * 1.35) : 1;
+
+    ctx.save();
+    ctx.globalAlpha = enemySpriteOpacity;
     ctx.fillStyle = battle.enemy.color;
     ctx.beginPath();
     ctx.ellipse(720, 132, 132, 48, 0, 0, Math.PI * 2);
@@ -659,6 +1041,7 @@ export function createBattleController({
       radius: 30,
       border: false
     });
+    ctx.restore();
 
     ctx.fillStyle = activeCreature.color;
     ctx.beginPath();
@@ -671,6 +1054,8 @@ export function createBattleController({
       radius: 34,
       border: false
     });
+
+    drawBattleAnimations();
 
     drawRoundedRect(38, 360, 884, 178, 20, "rgba(255, 251, 245, 0.97)", "#3d271d");
     drawText("Battle Log", 62, 394, { font: "14px 'Press Start 2P'", color: "#b93c2f" });
@@ -749,9 +1134,11 @@ export function createBattleController({
         ? "Your turn"
         : battle.turn === "recharging"
           ? "Recovering MP..."
-          : battle.turn === "resolving"
-            ? "Battle ending..."
-            : `${battle.enemy.name} is acting...`,
+          : battle.turn === "capturing"
+            ? "Capture orb thrown..."
+            : battle.turn === "resolving"
+              ? "Battle ending..."
+              : `${battle.enemy.name} is acting...`,
       760,
       380,
       { font: "10px 'Press Start 2P'", color: "#2a7f62", align: "right" }
