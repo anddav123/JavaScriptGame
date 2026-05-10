@@ -78,7 +78,7 @@ export const moveCatalog = {
   pebbleBarrage: { type: creatureTypes.STONE, name: "Pebble Barrage", power: 22, accuracy: 0.85, color: "#7c6f64", mpCost: 7 },
   graniteSlam: { type: creatureTypes.STONE, name: "Granite Slam", power: 32, accuracy: 0.74, color: "#5c534d", mpCost: 10 },
   mudHook: { type: creatureTypes.STONE, name: "Mud Hook", power: 16, accuracy: 0.91, color: "#8a5a44", mpCost: 5 },
-  gustPeck: { type: creatureTypes.FLYING, name: "Gust Peck", power: 10, accuracy: 0.98, color: "#90a4ae", mpCost: 3 },
+  gustPeck: { type: creatureTypes.FLYING, name: "Gust Peck", power: 10, accuracy: 0.98, mpCost: 3 },
   windShear: { type: creatureTypes.FLYING, name: "Wind Shear", power: 23, accuracy: 0.86, color: "#6ec6ff", mpCost: 7 },
   stormDive: { type: creatureTypes.FLYING, name: "Storm Dive", power: 35, accuracy: 0.72, color: "#4dabf7", mpCost: 11 },
   staticTap: { type: creatureTypes.LIGHTNING, name: "Static Tap", power: 8, accuracy: 0.99, color: "#fff176", mpCost: 2 },
