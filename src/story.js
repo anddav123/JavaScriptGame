@@ -11,24 +11,54 @@ export function createStoryController({
   const imageCache = {};
   let currentOnComplete = null;
 
-  function imageFor(src, fallbackSrc = null) {
+  function setImageFetchPriority(image, fetchPriority) {
+    if (fetchPriority && "fetchPriority" in image) {
+      image.fetchPriority = fetchPriority;
+    }
+  }
+
+  function prewarmImageRecord(imageRecord) {
+    imageRecord.decodeOnLoad = true;
+    if (!imageRecord.image.decode) return Promise.resolve();
+    if (imageRecord.decodePromise) return imageRecord.decodePromise;
+
+    imageRecord.decodePromise = imageRecord.image.decode().catch(() => null);
+    return imageRecord.decodePromise;
+  }
+
+  function imageFor(src, fallbackSrc = null, options = {}) {
     const cacheKey = fallbackSrc ? `${src}|${fallbackSrc}` : src;
-    if (imageCache[cacheKey]) return imageCache[cacheKey];
+    if (imageCache[cacheKey]) {
+      setImageFetchPriority(imageCache[cacheKey].image, options.fetchPriority);
+      return imageCache[cacheKey];
+    }
 
     const image = new Image();
+    image.decoding = "async";
+    setImageFetchPriority(image, options.fetchPriority);
+
     const imageRecord = {
       image,
       ready: false,
-      activeSrc: src
+      activeSrc: src,
+      decodeOnLoad: false,
+      decodePromise: null
     };
 
     image.addEventListener("load", () => {
       imageRecord.ready = true;
+      if (imageRecord.decodeOnLoad) {
+        prewarmImageRecord(imageRecord);
+      }
     });
     image.addEventListener("error", () => {
       if (fallbackSrc && imageRecord.activeSrc !== fallbackSrc) {
         imageRecord.activeSrc = fallbackSrc;
+        imageRecord.decodePromise = null;
         image.src = fallbackSrc;
+        if (imageRecord.decodeOnLoad) {
+          prewarmImageRecord(imageRecord);
+        }
         return;
       }
 
@@ -38,6 +68,30 @@ export function createStoryController({
     image.src = src;
     imageCache[cacheKey] = imageRecord;
     return imageRecord;
+  }
+
+  function imageStepsForCutscene(id = null) {
+    const scenes = id ? [cutscenes[id] || []] : Object.values(cutscenes);
+    return scenes.flatMap((steps) => steps.filter((step) => step.type === "image"));
+  }
+
+  function preloadCutsceneImages(id = null) {
+    const preloadPromises = imageStepsForCutscene(id).map((step) => {
+      const imageRecord = imageFor(step.src, step.fallbackSrc, { fetchPriority: "low" });
+      return prewarmImageRecord(imageRecord);
+    });
+
+    return Promise.allSettled(preloadPromises);
+  }
+
+  function schedulePreloadCutsceneImages(id = null) {
+    const preload = () => preloadCutsceneImages(id);
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      window.requestIdleCallback(preload, { timeout: 1500 });
+      return;
+    }
+
+    setTimeout(preload, 250);
   }
 
   function activeCutsceneSteps() {
@@ -53,7 +107,7 @@ export function createStoryController({
       if (step.type === "image") {
         gameState.cutscene.imageSrc = step.src;
         gameState.cutscene.fallbackImageSrc = step.fallbackSrc || null;
-        imageFor(step.src, step.fallbackSrc);
+        imageFor(step.src, step.fallbackSrc, { fetchPriority: "high" });
         gameState.cutscene.index += 1;
         continue;
       }
@@ -126,7 +180,9 @@ export function createStoryController({
     const cutscene = gameState.cutscene;
     if (!cutscene) return;
 
-    const imageRecord = cutscene.imageSrc ? imageFor(cutscene.imageSrc, cutscene.fallbackImageSrc) : null;
+    const imageRecord = cutscene.imageSrc
+      ? imageFor(cutscene.imageSrc, cutscene.fallbackImageSrc, { fetchPriority: "high" })
+      : null;
     if (imageRecord?.ready && imageRecord.image.complete && imageRecord.image.naturalWidth > 0) {
       drawCoverImage(imageRecord.image);
     } else {
@@ -155,6 +211,8 @@ export function createStoryController({
   return {
     advanceCutscene,
     drawCutscene,
+    preloadCutsceneImages,
+    schedulePreloadCutsceneImages,
     startCutscene
   };
 }

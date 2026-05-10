@@ -293,6 +293,8 @@ const {
   drawText
 });
 
+storyController.schedulePreloadCutsceneImages();
+
 function createCreatureInstance(species, overrides = {}) {
   const template = creatureTemplates[species];
   const level = Number.isFinite(overrides.level)
