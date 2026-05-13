@@ -6,6 +6,10 @@ import {
 } from "./constants.js";
 import { moveCatalog } from "./moves.js";
 
+function isConfirmKey(key) {
+  return key === "Enter" || key === " " || key === "Spacebar";
+}
+
 export function createCampMenuController({
   canvas,
   ctx,
@@ -128,7 +132,7 @@ export function createCampMenuController({
         gameState.campMenu.mainIndex = (gameState.campMenu.mainIndex - 1 + options.length) % options.length;
       } else if (key === "ArrowDown" || key === "s") {
         gameState.campMenu.mainIndex = (gameState.campMenu.mainIndex + 1) % options.length;
-      } else if (key === "Enter") {
+      } else if (isConfirmKey(key)) {
         const selected = options[gameState.campMenu.mainIndex];
         if (selected === "Rest") {
           restAtCamp();
@@ -161,7 +165,7 @@ export function createCampMenuController({
         gameState.campMenu.storedIndex = (gameState.campMenu.storedIndex - 1 + storage.length) % storage.length;
       } else if (key === "ArrowDown" || key === "s") {
         gameState.campMenu.storedIndex = (gameState.campMenu.storedIndex + 1) % storage.length;
-      } else if (key === "Enter") {
+      } else if (isConfirmKey(key)) {
         replaceStoredCreatureWithPendingCapture();
       } else if (key === "Backspace") {
         forfeitPendingCapture();
@@ -180,7 +184,7 @@ export function createCampMenuController({
         gameState.campMenu.storedIndex = (gameState.campMenu.storedIndex - 1 + storage.length) % storage.length;
       } else if (key === "ArrowDown" || key === "s") {
         gameState.campMenu.storedIndex = (gameState.campMenu.storedIndex + 1) % storage.length;
-      } else if (key === "Enter") {
+      } else if (isConfirmKey(key)) {
         chooseStoredCreature();
       } else if (key === "Backspace") {
         gameState.campMenu.mode = "main";
@@ -194,7 +198,7 @@ export function createCampMenuController({
         gameState.campMenu.partyIndex = (gameState.campMenu.partyIndex - 1 + partySize) % partySize;
       } else if (key === "ArrowDown" || key === "s") {
         gameState.campMenu.partyIndex = (gameState.campMenu.partyIndex + 1) % partySize;
-      } else if (key === "Enter") {
+      } else if (isConfirmKey(key)) {
         swapCampCreatureIntoParty();
       } else if (key === "Backspace") {
         gameState.campMenu.mode = "stored";
@@ -314,14 +318,14 @@ export function createCampMenuController({
       });
     });
 
-    drawText("Enter: choose   Backspace: close", 300, 392, { font: "16px Outfit", color: "#694435" });
+    drawText("Enter/Space: choose   Backspace: close", 300, 392, { font: "16px Outfit", color: "#694435" });
   }
 
   function drawStoredCreatureOverlay() {
     const storage = storedCreatures();
     drawRoundedRect(42, 40, 876, 492, 22, "rgba(255, 250, 243, 0.98)", "#3d271d");
     drawText("Camp Storage", 76, 74, { font: "16px 'Press Start 2P'", color: "#b93c2f" });
-    drawText("Enter: select   Backspace: back", 600, 74, { font: "16px Outfit", color: "#694435" });
+    drawText("Enter/Space: select   Backspace: back", 600, 74, { font: "16px Outfit", color: "#694435" });
 
     if (storage.length === 0) {
       drawText("No creatures are waiting at camp.", 76, 148, { font: "22px Outfit", color: "#694435" });
@@ -351,7 +355,7 @@ export function createCampMenuController({
     const campCreature = storage[gameState.campMenu.selectedStoredIndex];
     drawRoundedRect(42, 40, 876, 492, 22, "rgba(255, 250, 243, 0.98)", "#3d271d");
     drawText("Choose Replacement", 76, 74, { font: "16px 'Press Start 2P'", color: "#b93c2f" });
-    drawText("Enter: switch   Backspace: back", 610, 74, { font: "16px Outfit", color: "#694435" });
+    drawText("Enter/Space: switch   Backspace: back", 610, 74, { font: "16px Outfit", color: "#694435" });
 
     if (!campCreature) {
       drawText("Choose a creature from camp storage first.", 76, 148, { font: "22px Outfit", color: "#694435" });
@@ -376,7 +380,7 @@ export function createCampMenuController({
     const pendingCreature = gameState.campMenu.pendingCreature;
     drawRoundedRect(42, 40, 876, 492, 22, "rgba(255, 250, 243, 0.98)", "#3d271d");
     drawText("Camp Full", 76, 74, { font: "16px 'Press Start 2P'", color: "#b93c2f" });
-    drawText("Enter: replace stored   Backspace: forfeit catch", 474, 74, {
+    drawText("Enter/Space: replace stored   Backspace: forfeit catch", 474, 74, {
       font: "16px Outfit",
       color: "#694435"
     });

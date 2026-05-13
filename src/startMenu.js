@@ -7,6 +7,10 @@ const START_MENU_BUTTONS = {
   gap: 12
 };
 
+function isConfirmKey(key) {
+  return key === "Enter" || key === " " || key === "Spacebar";
+}
+
 export function createStartMenuController({
   canvas,
   ctx,
@@ -82,7 +86,7 @@ export function createStartMenuController({
       gameState.startMenu.index = (gameState.startMenu.index - 1 + options.length) % options.length;
     } else if (key === "ArrowDown" || key === "s") {
       gameState.startMenu.index = (gameState.startMenu.index + 1) % options.length;
-    } else if (key === "Enter") {
+    } else if (isConfirmKey(key)) {
       selectStartMenuOption(gameState.startMenu.index);
     }
   }

@@ -4,6 +4,10 @@ import {
 } from "./constants.js";
 import { moveCatalog } from "./moves.js";
 
+function isConfirmKey(key) {
+  return key === "Enter" || key === " " || key === "Spacebar";
+}
+
 export function createMenuController({
   canvas,
   ctx,
@@ -59,7 +63,7 @@ export function createMenuController({
         gameState.menu.mainIndex = (gameState.menu.mainIndex - 1 + options.length) % options.length;
       } else if (key === "ArrowDown" || key === "s") {
         gameState.menu.mainIndex = (gameState.menu.mainIndex + 1) % options.length;
-      } else if (key === "Enter") {
+      } else if (isConfirmKey(key)) {
         const selected = options[gameState.menu.mainIndex];
         if (selected === "Party") {
           gameState.menu.mode = "party";
@@ -88,7 +92,7 @@ export function createMenuController({
         gameState.menu.partyIndex = (gameState.menu.partyIndex - 1 + partySize) % partySize;
       } else if (key === "ArrowDown" || key === "s") {
         gameState.menu.partyIndex = (gameState.menu.partyIndex + 1) % partySize;
-      } else if (key === "Enter") {
+      } else if (isConfirmKey(key)) {
         gameState.player.activeIndex = gameState.menu.partyIndex;
         const activeCreature = getActiveCreature();
         setMessage(`${activeCreature.nickname} is now leading your party.`);
@@ -121,13 +125,13 @@ export function createMenuController({
         color: selected ? "#fff8f0" : "#2d1b14"
       });
     });
-    drawText("Enter: choose", canvas.width - 220, menuHeight + 2, { font: "14px Outfit", color: "#694435" });
+    drawText("Enter/Space: choose", canvas.width - 220, menuHeight + 2, { font: "14px Outfit", color: "#694435" });
   }
 
   function drawPartyMenuOverlay() {
     drawRoundedRect(42, 40, 876, 492, 22, "rgba(255, 250, 243, 0.98)", "#3d271d");
     drawText("Party", 76, 74, { font: "16px 'Press Start 2P'", color: "#b93c2f" });
-    drawText("Enter: lead   Backspace: back", 632, 74, { font: "16px Outfit", color: "#694435" });
+    drawText("Enter/Space: lead   Backspace: back", 632, 74, { font: "16px Outfit", color: "#694435" });
 
     gameState.player.party.forEach((creature, index) => {
       const selected = index === gameState.menu.partyIndex;

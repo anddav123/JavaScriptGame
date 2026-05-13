@@ -673,6 +673,7 @@ function render() {
 window.addEventListener("keydown", (event) => {
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   const movementKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d"];
+  const confirmKeys = ["Enter", " ", "Spacebar"];
   const interactionKeys = [" ", "Spacebar"];
 
   if (key === "f") {
@@ -682,7 +683,7 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (gameState.scene === "start") {
-    if (["ArrowUp", "ArrowDown", "w", "s", "Enter"].includes(key)) {
+    if (["ArrowUp", "ArrowDown", "w", "s"].includes(key) || confirmKeys.includes(key)) {
       handleStartMenuNavigation(key);
       event.preventDefault();
     }
@@ -690,7 +691,7 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (gameState.scene === "cutscene") {
-    if (key === "Enter") {
+    if (confirmKeys.includes(key)) {
       storyController.advanceCutscene();
       event.preventDefault();
     }
@@ -698,17 +699,17 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (gameState.scene === "ascension") {
-    if (key === "Enter") {
+    if (confirmKeys.includes(key)) {
       advanceAscensionScene();
     }
-    if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
+    if (movementKeys.includes(key) || confirmKeys.includes(key) || key === "Backspace") {
       event.preventDefault();
     }
     return;
   }
 
   if (gameState.scene === "moveLearning") {
-    if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
+    if (movementKeys.includes(key) || confirmKeys.includes(key) || key === "Backspace") {
       battleController.handleMoveLearningNavigation(key);
       event.preventDefault();
     }
@@ -728,7 +729,7 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (gameState.scene === "menu") {
-    if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
+    if (movementKeys.includes(key) || confirmKeys.includes(key) || key === "Backspace") {
       handleMenuNavigation(key);
       event.preventDefault();
     }
@@ -736,7 +737,7 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (gameState.scene === "campMenu") {
-    if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
+    if (movementKeys.includes(key) || confirmKeys.includes(key) || key === "Backspace") {
       handleCampMenuNavigation(key);
       event.preventDefault();
     }
@@ -744,14 +745,14 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (gameState.scene === "encounter") {
-    if (movementKeys.includes(key) || ["Enter", "Backspace"].includes(key)) {
+    if (movementKeys.includes(key) || confirmKeys.includes(key) || key === "Backspace") {
       event.preventDefault();
     }
     return;
   }
 
   if (gameState.scene === "battle") {
-    if (movementKeys.includes(key) || key === "Enter") {
+    if (movementKeys.includes(key) || confirmKeys.includes(key)) {
       battleController.handleBattleNavigation(key);
       event.preventDefault();
     }

@@ -14,13 +14,17 @@ import { createBattleProgressionController } from "./battleProgression.js";
 import { getMoveCost, moveCatalog } from "./moves.js";
 import { getTypeColor, typeEffectiveness } from "./types.js";
 
+function isConfirmKey(key) {
+  return key === "Enter" || key === " " || key === "Spacebar";
+}
+
 const BATTLE_SPRITE_BOUNDS = Object.freeze({
   enemy: { x: 664, y: 24, width: 118, height: 132 },
   player: { x: 168, y: 160, width: 148, height: 164 }
 });
 
 const DEFAULT_BATTLE_ANIMATION_DURATION = 700;
-const DEFAULT_BATTLE_TURN_DELAY = 700;
+const DEFAULT_BATTLE_TURN_DELAY = 600;
 const CAPTURE_SUCCESS_ANIMATION_DURATION = 1000;
 const CAPTURE_BREAK_ANIMATION_DURATION = 800;
 const CAPTURE_ORB_COLOR = "#3d8bfd";
@@ -936,7 +940,7 @@ export function createBattleController({
       battle.selectionIndex = moveSelectionIndex("left");
     } else if (key === "ArrowRight" || key === "d") {
       battle.selectionIndex = moveSelectionIndex("right");
-    } else if (key === "Enter") {
+    } else if (isConfirmKey(key)) {
       playerAction(battle.buttons[battle.selectionIndex]);
     }
   }
@@ -978,12 +982,12 @@ export function createBattleController({
       const y = 268 + index * 48;
       drawRoundedRect(160, y, 640, 36, 12, selected ? "#c8553d" : "#fff4e6", "#3d271d");
       drawText(option.label, 184, y + 24, {
-        font: "14px 'Press Start 2P'",
+        font: "10px 'Press Start 2P'",
         color: selected ? "#fff8f0" : "#2d1b14"
       });
     });
 
-    drawText("Enter: choose   Backspace: do not learn", 160, 492, { font: "16px Outfit", color: "#694435" });
+    drawText("Enter/Space: choose   Backspace: do not learn", 160, 515, { font: "14px Outfit", color: "#694435" });
   }
 
   function drawBattle() {

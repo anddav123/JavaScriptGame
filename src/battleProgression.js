@@ -13,6 +13,10 @@ import {
 import { getMoveCost, moveCatalog } from "./moves.js";
 import { getTypeColor } from "./types.js";
 
+function isConfirmKey(key) {
+  return key === "Enter" || key === " " || key === "Spacebar";
+}
+
 export function createBattleProgressionController({
   gameState,
   setMessage,
@@ -280,7 +284,7 @@ export function createBattleProgressionController({
       moveLearning.selectionIndex = (moveLearning.selectionIndex + 1) % optionCount;
     } else if (key === "Backspace") {
       resolveCurrentMoveLearning(null);
-    } else if (key === "Enter") {
+    } else if (isConfirmKey(key)) {
       const selected = clamp(moveLearning.selectionIndex ?? 0, 0, optionCount - 1);
       resolveCurrentMoveLearning(selected < prompt.creature.moves.length ? selected : null);
     }
