@@ -342,7 +342,7 @@ export const worldMaps = {
     name: "Ember Cave",
     mapType: "cave",
     palette: { top: "#635166", bottom: "#362933" },
-    encounterRate: 0.14,
+    encounterRate: 0.054,
     wildCreatures: ["Scorcha"],
     wildLevelRange: { min: 3, max: 12 },
     terrain: [

@@ -12,6 +12,7 @@ import {
   TILE_SIZE
 } from "./constants.js";
 import { createAscensionCutsceneController } from "./ascensionCutscene.js";
+import { createAudioController } from "./audio.js";
 import { createBattleController } from "./battle.js";
 import { createCampMenuController } from "./campMenu.js";
 import { createCanvasUi } from "./canvasUi.js";
@@ -39,6 +40,9 @@ const VIEW_ROWS = Math.floor(canvas.height / TILE_SIZE);
 
 const keys = new Set();
 let mouse = { x: 0, y: 0 };
+const scheduleAudioSync = typeof queueMicrotask === "function"
+  ? queueMicrotask
+  : (callback) => setTimeout(callback, 0);
 
 const {
   drawCoverImage,
@@ -107,13 +111,18 @@ const gameState = {
   pointerHotspot: null
 };
 
+const audioController = createAudioController({ gameState });
+
 const worldController = createWorldController({
   canvas,
   gameState,
   setMessage,
   clamp,
   onPlayerStep: rechargePlayerMp,
-  onEncounter: () => battleController.beginEncounter(),
+  onEncounter: () => {
+    audioController.playSoundEffect("encounter");
+    battleController.beginEncounter();
+  },
   onCampInteract: () => openCampMenu()
 });
 
@@ -384,6 +393,11 @@ async function toggleFullscreen() {
   }
 }
 
+function unlockAudioFromUserGesture() {
+  audioController.unlockAudio();
+  scheduleAudioSync(() => audioController.sync());
+}
+
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
@@ -645,6 +659,7 @@ function drawEncounterTransition() {
 
 function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  audioController.sync();
 
   if (gameState.scene === "start") {
     drawStartMenu();
@@ -671,6 +686,8 @@ function render() {
 }
 
 window.addEventListener("keydown", (event) => {
+  unlockAudioFromUserGesture();
+
   const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
   const movementKeys = ["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d"];
   const confirmKeys = ["Enter", " ", "Spacebar"];
@@ -799,6 +816,7 @@ window.addEventListener("mousemove", (event) => {
 });
 
 canvas.addEventListener("click", (event) => {
+  unlockAudioFromUserGesture();
   mouse = canvasPointFromEvent(event);
 
   if (gameState.scene === "start") {
@@ -818,6 +836,7 @@ canvas.addEventListener("click", (event) => {
 });
 
 fullscreenToggle.addEventListener("click", () => {
+  unlockAudioFromUserGesture();
   toggleFullscreen();
 });
 
