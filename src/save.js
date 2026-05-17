@@ -6,6 +6,7 @@ import {
   SAVE_VERSION
 } from "./constants.js";
 import { creatureTemplates } from "./creatures.js";
+import { normalizeInventory, normalizeLearnedRecipes, syncLegacyCounters } from "./inventory.js";
 import { worldMaps } from "./maps.js";
 
 export function createSaveController({
@@ -283,6 +284,12 @@ export function createSaveController({
     });
   }
 
+  function normalizePlayerSkills(skills = {}) {
+    return {
+      swim: skills?.swim === true
+    };
+  }
+
   function serializeGameState() {
     const serializeCreature = (creature) => ({
       species: creature.species,
@@ -306,12 +313,14 @@ export function createSaveController({
         x: gameState.player.x,
         y: gameState.player.y,
         facing: gameState.player.facing,
-        potions: gameState.player.potions,
-        orbs: gameState.player.orbs,
+        skills: normalizePlayerSkills(gameState.player.skills),
+        inventory: normalizeInventory(gameState.player.inventory, gameState.player),
+        learnedRecipes: normalizeLearnedRecipes(gameState.player.learnedRecipes),
         wins: gameState.player.wins,
         maxMp: gameState.player.maxMp,
         mp: gameState.player.mp,
         mpRechargeStepProgress: gameState.player.mpRechargeStepProgress,
+        tutorials: { ...(gameState.player.tutorials || {}) },
         activeIndex: gameState.player.activeIndex,
         party: gameState.player.party.map(serializeCreature),
         campCreatures: (gameState.player.campCreatures || []).map(serializeCreature)
@@ -440,12 +449,17 @@ export function createSaveController({
       x: Number.isInteger(parsedSave.player.x) ? parsedSave.player.x : 1,
       y: Number.isInteger(parsedSave.player.y) ? parsedSave.player.y : 1,
       facing,
+      isSwimming: false,
       walkFrame: 0,
       lastMovedAt: 0,
-      potions: Number.isFinite(parsedSave.player.potions) ? Math.max(0, Math.round(parsedSave.player.potions)) : 0,
-      orbs: Number.isFinite(parsedSave.player.orbs) ? Math.max(0, Math.round(parsedSave.player.orbs)) : 0,
+      skills: normalizePlayerSkills(parsedSave.player.skills),
+      inventory: normalizeInventory(parsedSave.player.inventory, parsedSave.player),
+      learnedRecipes: normalizeLearnedRecipes(parsedSave.player.learnedRecipes),
       wins: Number.isFinite(parsedSave.player.wins) ? Math.max(0, Math.round(parsedSave.player.wins)) : 0,
       maxMp: Number.isFinite(parsedSave.player.maxMp) ? Math.max(1, Math.round(parsedSave.player.maxMp)) : gameState.player.maxMp,
+      tutorials: parsedSave.player.tutorials && typeof parsedSave.player.tutorials === "object" && !Array.isArray(parsedSave.player.tutorials)
+        ? Object.fromEntries(Object.entries(parsedSave.player.tutorials).filter(([key, value]) => typeof key === "string" && typeof value === "boolean"))
+        : {},
       activeIndex,
       campCreatures,
       party
@@ -462,19 +476,27 @@ export function createSaveController({
 
     const previousMapId = gameState.world.currentMapId;
     const previousCamp = gameState.world.camp;
+    const previousPlayer = gameState.player;
     gameState.world.currentMapId = parsedSave.world.currentMapId;
     gameState.world.camp = camp;
+    gameState.player = nextPlayer;
     if (!isWalkable(nextPlayer.x, nextPlayer.y)) {
       gameState.world.currentMapId = previousMapId;
       gameState.world.camp = previousCamp;
+      gameState.player = previousPlayer;
       throw new Error("Save position is blocked on that map.");
     }
 
-    gameState.player = nextPlayer;
+    syncLegacyCounters(gameState);
     gameState.scene = "world";
     gameState.menu.mode = "main";
     gameState.menu.mainIndex = 0;
     gameState.menu.partyIndex = activeIndex;
+    gameState.menu.recipeIndex = 0;
+    gameState.menu.craftFeedback = "";
+    gameState.menu.craftFeedbackShownAt = 0;
+    gameState.menu.bagTabIndex = 0;
+    gameState.menu.bagItemIndex = 0;
     gameState.campMenu.mode = "main";
     gameState.campMenu.mainIndex = 0;
     gameState.campMenu.storedIndex = 0;

@@ -1,19 +1,22 @@
-const MAP_TRACKS = {
-  sunmeadow: {
+import { worldMaps } from "./maps.js";
+
+const TRACKS = {
+  meadow: {
     src: "assets/audio/maps/meadow.ogg",
     volume: 0.32
   },
   emberCave: {
     src: "assets/audio/maps/ember-cave.ogg",
     volume: 0.46
-  }
-};
-
-const SCENE_TRACKS = {
+  },
   battle: {
     src: "assets/audio/scenes/battle.ogg",
     volume: 0.1
   }
+};
+
+const SCENE_TRACKS = {
+  battle: "battle"
 };
 
 const MAP_MUSIC_SCENES = new Set(["world", "menu", "campMenu", "encounter"]);
@@ -33,17 +36,19 @@ export function createAudioController({ gameState }) {
   let playBlocked = false;
   let playPromise = null;
 
+  function currentMapAudioTrack() {
+    return worldMaps[gameState.world.currentMapId]?.audio?.track ?? null;
+  }
+
   function desiredTrackKey() {
-    if (SCENE_TRACKS[gameState.scene]) return `scene:${gameState.scene}`;
+    const sceneTrackKey = SCENE_TRACKS[gameState.scene];
+    if (sceneTrackKey) return sceneTrackKey;
     if (!MAP_MUSIC_SCENES.has(gameState.scene)) return null;
-    return MAP_TRACKS[gameState.world.currentMapId] ? `map:${gameState.world.currentMapId}` : null;
+    return currentMapAudioTrack();
   }
 
   function trackForKey(trackKey) {
-    const [trackType, trackName] = trackKey.split(":");
-    if (trackType === "scene") return SCENE_TRACKS[trackName] ?? null;
-    if (trackType === "map") return MAP_TRACKS[trackName] ?? null;
-    return null;
+    return TRACKS[trackKey] ?? null;
   }
 
   function ensureTrack(trackKey) {

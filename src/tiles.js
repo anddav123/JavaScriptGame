@@ -375,6 +375,44 @@ function createRoadTileCanvas(variant) {
   return roadCanvas;
 }
 
+function createWaterTileCanvas(variant) {
+  const waterCanvas = document.createElement("canvas");
+  waterCanvas.width = TILE_SIZE;
+  waterCanvas.height = TILE_SIZE;
+
+  const waterCtx = waterCanvas.getContext("2d");
+  const waterGradient = waterCtx.createLinearGradient(0, 0, TILE_SIZE, TILE_SIZE);
+  const bases = [
+    ["#2f9ed6", "#1f76b8"],
+    ["#38aadd", "#226fb0"],
+    ["#2b8ed0", "#1f67a7"],
+    ["#43b8e3", "#267bbd"]
+  ][variant];
+  waterGradient.addColorStop(0, bases[0]);
+  waterGradient.addColorStop(1, bases[1]);
+  waterCtx.fillStyle = waterGradient;
+  waterCtx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+
+  const flecks = [
+    [[6, 11, 14, 3, "rgba(174, 229, 255, 0.5)"], [27, 29, 12, 2, "rgba(255, 255, 255, 0.42)"], [15, 38, 18, 2, "rgba(89, 190, 232, 0.45)"]],
+    [[9, 25, 16, 2, "rgba(255, 255, 255, 0.38)"], [29, 12, 10, 3, "rgba(172, 233, 255, 0.5)"], [3, 39, 20, 2, "rgba(80, 184, 228, 0.45)"]],
+    [[5, 17, 12, 2, "rgba(169, 229, 255, 0.5)"], [22, 35, 17, 3, "rgba(255, 255, 255, 0.36)"], [31, 5, 12, 2, "rgba(92, 195, 236, 0.45)"]],
+    [[8, 34, 16, 2, "rgba(255, 255, 255, 0.4)"], [24, 19, 18, 3, "rgba(176, 233, 255, 0.48)"], [4, 8, 15, 2, "rgba(78, 177, 223, 0.45)"]]
+  ][variant];
+
+  waterCtx.lineCap = "round";
+  for (const [x, y, width, lineWidth, color] of flecks) {
+    waterCtx.strokeStyle = color;
+    waterCtx.lineWidth = lineWidth;
+    waterCtx.beginPath();
+    waterCtx.moveTo(x, y);
+    waterCtx.quadraticCurveTo(x + width / 2, y - 3, x + width, y);
+    waterCtx.stroke();
+  }
+
+  return waterCanvas;
+}
+
 function tileVariant(mapX, mapY, xWeight, yWeight, variantCount) {
   return Math.abs(mapX * xWeight + mapY * yWeight) % variantCount;
 }
@@ -382,6 +420,7 @@ function tileVariant(mapX, mapY, xWeight, yWeight, variantCount) {
 export function createTileRenderer({ ctx }) {
   const wallTileCanvases = [0, 1, 2, 3].map(createWallTileCanvas);
   const roadTileCanvases = [0, 1, 2, 3].map(createRoadTileCanvas);
+  const waterTileCanvases = [0, 1, 2, 3].map(createWaterTileCanvas);
   const grassTileCanvases = {
     meadow: [0, 1, 2, 3].map((variant) => createGrassTileCanvas(variant)),
     cave: [0, 1, 2, 3].map((variant) => createGrassTileCanvas(variant, false, "cave"))
@@ -416,6 +455,12 @@ export function createTileRenderer({ ctx }) {
       const tallGrassTiles = tallGrassTileCanvases[grassTheme];
       const tallGrassVariant = tileVariant(mapX, mapY, 13, 29, tallGrassTiles.length);
       ctx.drawImage(tallGrassTiles[tallGrassVariant], px, py);
+      return;
+    }
+
+    if (tile === "~") {
+      const waterVariant = tileVariant(mapX, mapY, 7, 43, waterTileCanvases.length);
+      ctx.drawImage(waterTileCanvases[waterVariant], px, py);
       return;
     }
 

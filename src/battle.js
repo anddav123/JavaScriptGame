@@ -11,6 +11,8 @@ import {
   PLAYER_BATTLE_MP_RECOVERY
 } from "./constants.js";
 import { createBattleProgressionController } from "./battleProgression.js";
+import { addResource, itemCount, removeItem } from "./inventory.js";
+import { itemCatalog, resourceName } from "./items.js";
 import { getMoveCost, moveCatalog } from "./moves.js";
 import { getTypeColor, typeEffectiveness } from "./types.js";
 
@@ -30,6 +32,28 @@ const CAPTURE_BREAK_ANIMATION_DURATION = 800;
 const CAPTURE_ORB_COLOR = "#3d8bfd";
 const TONIC_ANIMATION_DURATION = 850;
 const TONIC_LIQUID_COLOR = "#8e44ad";
+const BATTLE_DROP_CHANCE = 0.45;
+const BATTLE_DROP_TUTORIAL_ID = "rangerBattleDropsIntroSeen";
+
+const creatureResourceDrops = Object.freeze({
+  Buzzybee: [
+    { id: "meadowHerb", weight: 4 },
+    { id: "glowMushroom", weight: 1 }
+  ],
+  Sproutrunk: [
+    { id: "meadowHerb", weight: 5 },
+    { id: "glowMushroom", weight: 2 }
+  ],
+  Pluma: [
+    { id: "shardGem", weight: 2 },
+    { id: "meadowHerb", weight: 1 }
+  ],
+  Scorcha: [
+    { id: "emberGem", weight: 5 },
+    { id: "shardGem", weight: 2 },
+    { id: "caveMoss", weight: 1 }
+  ]
+});
 
 export function createBattleController({
   canvas,
@@ -438,22 +462,28 @@ export function createBattleController({
     const battle = gameState.battle;
     if (!battle) return { attempted: false, animationDuration: 0 };
 
-    if (gameState.player.orbs <= 0) {
+    const orbOptions = Object.entries(itemCatalog)
+      .filter(([itemId, item]) => item.effect === "capture" && itemCount(gameState, itemId) > 0)
+      .sort(([, a], [, b]) => (b.catchBonus ?? 0) - (a.catchBonus ?? 0));
+    const [orbItemId, orbItem] = orbOptions[0] || [];
+
+    if (!orbItemId) {
       writeBattleLog("No capture orbs left.");
       return { attempted: false, animationDuration: 0 };
     }
 
-    gameState.player.orbs -= 1;
+    removeItem(gameState, orbItemId, 1);
     const enemy = battle.enemy;
     const alreadyOwned = [...gameState.player.party, ...campCreatureStorage()]
       .some((creature) => creature.species === enemy.name);
     const healthRatio = enemy.hp / enemy.maxHp;
-    const catchChance = clamp(0.2 + (1 - healthRatio) * 0.65 + (alreadyOwned ? -0.08 : 0.05), 0.12, 0.92);
+    const catchChance = clamp(0.2 + (1 - healthRatio) * 0.65 + (alreadyOwned ? -0.08 : 0.05) + (orbItem.catchBonus ?? 0), 0.12, 0.95);
     const captured = Math.random() <= catchChance;
     const animationDuration = startCaptureAnimation(captured ? "success" : "break");
 
     battle.turn = "capturing";
-    writeBattleLog(`You threw a capture orb at ${enemy.name}.`);
+    const orbArticle = /^[aeiou]/i.test(orbItem.name) ? "an" : "a";
+    writeBattleLog(`You threw ${orbArticle} ${orbItem.name} at ${enemy.name}.`);
 
     return {
       attempted: true,
@@ -461,6 +491,12 @@ export function createBattleController({
       species: enemy.name,
       animationDuration
     };
+  }
+
+  function totalCaptureOrbs() {
+    return Object.entries(itemCatalog)
+      .filter(([, item]) => item.effect === "capture")
+      .reduce((total, [itemId]) => total + itemCount(gameState, itemId), 0);
   }
 
   function wildEncounterPool() {
@@ -511,7 +547,9 @@ export function createBattleController({
       afterBattleLearnMoves: [],
       animations: [],
       buttons: [],
-      selectionIndex: 0
+      selectionIndex: 0,
+      menuMode: "actions",
+      itemIndex: 0
     };
     gameState.scene = "encounter";
     gameState.encounterTransition.active = true;
@@ -540,6 +578,36 @@ export function createBattleController({
       gameState.player.maxMp
     );
     return gameState.player.mp - previousMp;
+  }
+
+  function weightedResourceChoice(resources = []) {
+    const totalWeight = resources.reduce((sum, entry) => sum + Math.max(0, entry.weight || 0), 0);
+    if (totalWeight <= 0) return null;
+
+    let roll = Math.random() * totalWeight;
+    for (const entry of resources) {
+      roll -= Math.max(0, entry.weight || 0);
+      if (roll <= 0) return entry.id;
+    }
+
+    return resources[resources.length - 1]?.id || null;
+  }
+
+  function resourceDropPoolForBattle(battle) {
+    const enemyDrops = creatureResourceDrops[battle.enemy.species] || creatureResourceDrops[battle.enemy.name] || [];
+    const mapDrops = currentMap().battleDrops || [];
+    return [...enemyDrops, ...mapDrops];
+  }
+
+  function tryAwardBattleResourceDrop(battle) {
+    if (!gameState.player.tutorials?.[BATTLE_DROP_TUTORIAL_ID]) return null;
+    if (Math.random() > BATTLE_DROP_CHANCE) return null;
+
+    const resourceId = weightedResourceChoice(resourceDropPoolForBattle(battle));
+    if (!resourceId) return null;
+
+    addResource(gameState, resourceId, 1);
+    return resourceId;
   }
 
   function applyMove(attacker, defender, moveId, owner) {
@@ -653,11 +721,16 @@ export function createBattleController({
       let ascensionScenes = [];
       if (playerWon) {
         const victoryMessage = `${activeCreature.nickname} won in ${currentMap().name}. Total victories: ${gameState.player.wins}.`;
+        const droppedResourceId = tryAwardBattleResourceDrop(battle);
         awardCreatureWinProgress(activeCreature);
         const milestoneMessages = battle.afterBattleMessages ?? [];
         ascensionScenes = battle.afterBattleAscensions ?? [];
         const learnMoves = battle.afterBattleLearnMoves ?? [];
-        outcomeMessage = milestoneMessages.length > 0 ? `${victoryMessage} ${milestoneMessages.join(" ")}` : victoryMessage;
+        const rewardMessage = droppedResourceId
+          ? `${battle.enemy.name} dropped 1 ${resourceName(droppedResourceId)}.`
+          : "";
+        const outcomeMessages = [victoryMessage, rewardMessage, ...milestoneMessages].filter(Boolean);
+        outcomeMessage = outcomeMessages.join(" ");
         if (learnMoves.length > 0 && typeof startMoveLearningSequence === "function") {
           gameState.battle = null;
           startMoveLearningSequence(learnMoves, outcomeMessage, ascensionScenes);
@@ -756,14 +829,45 @@ export function createBattleController({
       }
       gameState.player.mp = clamp(gameState.player.mp - moveCost, 0, gameState.player.maxMp);
       action.moveResult = applyMove(activeCreature, battle.enemy, action.moveId, "player");
-    } else if (action.type === "tonic") {
-      if (gameState.player.potions <= 0) {
-        writeBattleLog("No tonics left.");
+    } else if (action.type === "openItems") {
+      const items = battleItemOptions();
+      if (items.length === 0) {
+        writeBattleLog("No battle tonics left.");
         return;
       }
-      gameState.player.potions -= 1;
-      activeCreature.hp = clamp(activeCreature.hp + 20, 0, activeCreature.maxHp);
-      writeBattleLog(`${activeCreature.nickname} used a health tonic.`);
+      battle.menuMode = "items";
+      battle.itemIndex = 0;
+      return;
+    } else if (action.type === "item") {
+      const item = itemCatalog[action.itemId];
+      if (!item || itemCount(gameState, action.itemId) <= 0) {
+        writeBattleLog("That item is not available.");
+        battle.menuMode = "actions";
+        return;
+      }
+
+      if (item.effect === "healHp") {
+        if (activeCreature.hp >= activeCreature.maxHp) {
+          writeBattleLog(`${activeCreature.nickname} is already at full HP.`);
+          return;
+        }
+        removeItem(gameState, action.itemId, 1);
+        activeCreature.hp = clamp(activeCreature.hp + item.amount, 0, activeCreature.maxHp);
+        writeBattleLog(`${activeCreature.nickname} used ${item.name}.`);
+      } else if (item.effect === "restoreMp") {
+        if (gameState.player.mp >= gameState.player.maxMp) {
+          writeBattleLog("MP is already full.");
+          return;
+        }
+        removeItem(gameState, action.itemId, 1);
+        gameState.player.mp = clamp(gameState.player.mp + item.amount, 0, gameState.player.maxMp);
+        writeBattleLog(`Used ${item.name}.`);
+      } else {
+        writeBattleLog("That item cannot be used in battle.");
+        return;
+      }
+
+      battle.menuMode = "actions";
       action.moveResult = { animationDuration: startTonicAnimation() };
     } else if (action.type === "catch") {
       const catchResult = attemptCatch();
@@ -834,11 +938,17 @@ export function createBattleController({
 
     return [
       ...moves,
-      { type: "tonic", x: 490, y: 528, width: 94, height: 32 },
+      { type: "openItems", x: 490, y: 528, width: 94, height: 32 },
       { type: "catch", x: 594, y: 528, width: 94, height: 32 },
       { type: "recoverMp", x: 698, y: 528, width: 94, height: 32 },
       { type: "run", x: 802, y: 528, width: 94, height: 32 }
     ];
+  }
+
+  function battleItemOptions() {
+    return Object.entries(itemCatalog)
+      .filter(([itemId, item]) => ["healHp", "restoreMp"].includes(item.effect) && itemCount(gameState, itemId) > 0)
+      .map(([itemId, item]) => ({ itemId, item }));
   }
 
   function battleMoveCount() {
@@ -869,7 +979,7 @@ export function createBattleController({
       }
 
       if (direction === "right") {
-        return submenuStart + Math.min(3, submenuIndex + 1);
+        return submenuStart + Math.min(battle.buttons.length - submenuStart - 1, submenuIndex + 1);
       }
 
       if (direction === "up") {
@@ -927,6 +1037,27 @@ export function createBattleController({
   function handleBattleNavigation(key) {
     const battle = gameState.battle;
     if (!battle || battle.turn !== "player") return;
+
+    if (battle.menuMode === "items") {
+      const items = battleItemOptions();
+      if (items.length === 0) {
+        battle.menuMode = "actions";
+        writeBattleLog("No battle tonics left.");
+        return;
+      }
+
+      if (key === "ArrowUp" || key === "w") {
+        battle.itemIndex = (battle.itemIndex - 1 + items.length) % items.length;
+      } else if (key === "ArrowDown" || key === "s") {
+        battle.itemIndex = (battle.itemIndex + 1) % items.length;
+      } else if (isConfirmKey(key)) {
+        const selected = items[clamp(battle.itemIndex ?? 0, 0, items.length - 1)];
+        playerAction({ type: "item", itemId: selected.itemId });
+      } else if (key === "ArrowLeft" || key === "a" || key === "Backspace") {
+        battle.menuMode = "actions";
+      }
+      return;
+    }
 
     if (battle.buttons.length === 0) {
       battle.buttons = battleButtons();
@@ -988,6 +1119,40 @@ export function createBattleController({
     });
 
     drawText("Enter/Space: choose   Backspace: do not learn", 160, 515, { font: "14px Outfit", color: "#694435" });
+  }
+
+  function drawBattleItemMenu() {
+    const battle = gameState.battle;
+    const items = battleItemOptions();
+    if (!battle || battle.menuMode !== "items") return;
+
+    drawRoundedRect(484, 318, 420, 206, 18, "rgba(255, 250, 243, 0.98)", "#3d271d");
+    drawText("Battle Items", 506, 350, { font: "12px 'Press Start 2P'", color: "#b93c2f" });
+    drawText("Enter/Space: use   Backspace: back", 506, 506, { font: "13px Outfit", color: "#694435" });
+
+    if (items.length === 0) {
+      drawText("No HP or MP tonics available.", 506, 392, { font: "17px Outfit", color: "#694435" });
+      return;
+    }
+
+    battle.itemIndex = clamp(battle.itemIndex ?? 0, 0, items.length - 1);
+    const mouse = getMouse();
+    items.forEach(({ itemId, item }, index) => {
+      const x = 506;
+      const width = 372;
+      const selected = index === battle.itemIndex;
+      const y = 372 + index * 22;
+      const isHovered = mouse.x >= x && mouse.x <= x + width && mouse.y >= y - 15 && mouse.y <= y + 5;
+      if (isHovered) {
+        battle.itemIndex = index;
+        gameState.pointerHotspot = { type: "item", itemId };
+      }
+      drawRoundedRect(x, y - 15, width, 20, 8, selected || isHovered ? "#c8553d" : "#fff4e6", "#3d271d");
+      drawText(`${item.name} x${itemCount(gameState, itemId)} · ${item.effect === "healHp" ? `HP +${item.amount}` : `MP +${item.amount}`}`, 520, y, {
+        font: "13px Outfit",
+        color: selected || isHovered ? "#fff8f0" : "#2d1b14"
+      });
+    });
   }
 
   function drawBattle() {
@@ -1086,7 +1251,7 @@ export function createBattleController({
 
       const fill = button.type === "move"
         ? canAffordMove ? move.color ?? getTypeColor(move.type) : "#8d8178"
-        : button.type === "tonic"
+        : button.type === "openItems"
           ? "#2a9d8f"
           : button.type === "catch"
             ? "#9c6644"
@@ -1106,10 +1271,10 @@ export function createBattleController({
       drawText(
         button.type === "move"
           ? move.name
-          : button.type === "tonic"
-            ? `Tonic x${gameState.player.potions}`
+          : button.type === "openItems"
+            ? "Items"
             : button.type === "catch"
-              ? `Catch x${gameState.player.orbs}`
+              ? `Orb x${totalCaptureOrbs()}`
               : button.type === "recoverMp"
                 ? "MP +1"
                 : "Run",
@@ -1127,11 +1292,16 @@ export function createBattleController({
         );
       }
 
-      if (isHovered) {
+      if (isHovered && battle.menuMode !== "items") {
         gameState.pointerHotspot = button;
         battle.selectionIndex = index;
       }
     });
+
+    if (battle.menuMode === "items") {
+      gameState.pointerHotspot = null;
+      drawBattleItemMenu();
+    }
 
     drawText(
       battle.turn === "player"

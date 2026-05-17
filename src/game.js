@@ -18,6 +18,8 @@ import { createCampMenuController } from "./campMenu.js";
 import { createCanvasUi } from "./canvasUi.js";
 import { cutscenes } from "./cutscenes.js";
 import { creatureTemplates, defaultMovesForLevel, MAX_CREATURE_MOVES } from "./creatures.js";
+import { createDialogueSceneController } from "./dialogueScene.js";
+import { createInitialInventory, createInitialLearnedRecipes } from "./inventory.js";
 import { createMenuController } from "./menu.js";
 import { moveCatalog } from "./moves.js";
 import { createNonPlayerCharacterController } from "./nonPlayerCharacter.js";
@@ -71,7 +73,12 @@ const gameState = {
   menu: {
     mode: "main",
     mainIndex: 0,
-    partyIndex: 0
+    partyIndex: 0,
+    recipeIndex: 0,
+    craftFeedback: "",
+    craftFeedbackShownAt: 0,
+    bagTabIndex: 0,
+    bagItemIndex: 0
   },
   campMenu: {
     mode: "main",
@@ -90,14 +97,19 @@ const gameState = {
     x: 1,
     y: 1,
     facing: "down",
+    isSwimming: false,
     walkFrame: 0,
     lastMovedAt: 0,
     potions: INITIAL_PLAYER_POTIONS,
     orbs: INITIAL_PLAYER_ORBS,
+    inventory: createInitialInventory(),
+    learnedRecipes: createInitialLearnedRecipes(),
+    skills: { swim: false },
     wins: 0,
     maxMp: INITIAL_PLAYER_MAX_MP,
     mp: INITIAL_PLAYER_MAX_MP,
     mpRechargeStepProgress: 0,
+    tutorials: {},
     activeIndex: 0,
     campCreatures: [],
     party: [
@@ -112,6 +124,8 @@ const gameState = {
 };
 
 const audioController = createAudioController({ gameState });
+let openShopCraftMenuFromWorld = () => {};
+let startNpcDialogueFromWorld = () => {};
 
 const worldController = createWorldController({
   canvas,
@@ -123,13 +137,17 @@ const worldController = createWorldController({
     audioController.playSoundEffect("encounter");
     battleController.beginEncounter();
   },
-  onCampInteract: () => openCampMenu()
+  onCampInteract: () => openCampMenu(),
+  onShopCraft: (npc) => startNpcDialogueFromWorld(npc, { onComplete: () => openShopCraftMenuFromWorld() }),
+  onNpcDialogue: (npc) => startNpcDialogueFromWorld(npc)
 });
 
 const {
   currentMap,
   currentMapCols,
   currentMapRows,
+  currentGatheringSpots,
+  ensureGatheringSpots,
   interactFacing,
   isWalkable,
   movePlayer,
@@ -268,16 +286,27 @@ const storyController = createStoryController({
   onComplete: beginNewGame
 });
 
+const dialogueSceneController = createDialogueSceneController({
+  canvas,
+  ctx,
+  gameState,
+  drawRoundedRect,
+  drawText,
+  wrapText
+});
+
 const {
   drawMenuOverlay,
   handleMenuNavigation,
-  openMenu
+  openMenu,
+  openShopCraftMenu
 } = createMenuController({
   canvas,
   ctx,
   gameState,
   saveController,
   tileAt,
+  currentMap,
   getActiveCreature,
   setMessage,
   drawCreatureSprite,
@@ -285,6 +314,40 @@ const {
   drawText,
   wrapText
 });
+
+openShopCraftMenuFromWorld = openShopCraftMenu;
+
+function showNpcMessage(npc) {
+  setMessage(`${npc.name}: ${npc.dialogue}`);
+}
+
+startNpcDialogueFromWorld = (npc, options = {}) => {
+  const introDialogue = npc?.introDialogue;
+  const tutorialId = introDialogue?.id;
+
+  if (introDialogue && tutorialId && !gameState.player.tutorials?.[tutorialId]) {
+    gameState.player.tutorials = {
+      ...(gameState.player.tutorials || {}),
+      [tutorialId]: true
+    };
+    dialogueSceneController.startDialogueScene(introDialogue, {
+      onComplete: () => {
+        if (typeof options.onComplete === "function") {
+          options.onComplete();
+        } else {
+          showNpcMessage(npc);
+        }
+      }
+    });
+    return;
+  }
+
+  if (typeof options.onComplete === "function") {
+    options.onComplete();
+  } else {
+    showNpcMessage(npc);
+  }
+};
 
 const {
   drawStartMenu,
@@ -524,6 +587,151 @@ function drawCamp(camp) {
   drawRoundedRect(px + 34, py + 42, 5, 3, 0, "#c8553d");
 }
 
+function drawLeafShape(cx, cy, width, height, rotation, fill, stroke) {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation);
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(0, -height / 2);
+  ctx.bezierCurveTo(width / 2, -height / 4, width / 2, height / 4, 0, height / 2);
+  ctx.bezierCurveTo(-width / 2, height / 4, -width / 2, -height / 4, 0, -height / 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(255, 255, 220, 0.45)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, -height / 3);
+  ctx.lineTo(0, height / 3);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawCrystalShape(cx, cy, width, height, fill, stroke, glow) {
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy + height * 0.32, width * 0.7, height * 0.22, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy - height / 2);
+  ctx.lineTo(cx + width / 2, cy - height * 0.05);
+  ctx.lineTo(cx + width * 0.28, cy + height / 2);
+  ctx.lineTo(cx - width * 0.28, cy + height / 2);
+  ctx.lineTo(cx - width / 2, cy - height * 0.05);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
+  ctx.beginPath();
+  ctx.moveTo(cx - width * 0.12, cy - height * 0.32);
+  ctx.lineTo(cx + width * 0.14, cy - height * 0.06);
+  ctx.lineTo(cx - width * 0.02, cy + height * 0.22);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawMeadowHerbSpot(px, py, pulse) {
+  ctx.strokeStyle = "#2f6d3f";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(px + 24, py + 40);
+  ctx.quadraticCurveTo(px + 22, py + 28, px + 24, py + 18 - pulse * 2);
+  ctx.stroke();
+  drawLeafShape(px + 17, py + 31, 13, 25, -0.65, "#63c96b", "#2f6d3f");
+  drawLeafShape(px + 30, py + 28, 13, 25, 0.65, "#77dd77", "#2f6d3f");
+  drawLeafShape(px + 24, py + 22 - pulse * 2, 12, 24, 0, "#98e879", "#2f6d3f");
+}
+
+function drawGlowMushroomSpot(px, py, pulse) {
+  ctx.fillStyle = "#e8d8ff";
+  ctx.strokeStyle = "#6f4c8b";
+  ctx.lineWidth = 2;
+  drawRoundedRect(px + 20, py + 27, 8, 14, 4, "#f3eaff", "#6f4c8b");
+  ctx.beginPath();
+  ctx.ellipse(px + 24, py + 24, 15, 9 + pulse * 2, 0, Math.PI, 0);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#fff8c7";
+  for (const [dx, dy] of [[-6, -2], [0, -5], [7, -1]]) {
+    ctx.beginPath();
+    ctx.arc(px + 24 + dx, py + 24 + dy, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawCaveMossSpot(px, py, pulse) {
+  ctx.fillStyle = "#426b3a";
+  ctx.strokeStyle = "#223c24";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.ellipse(px + 24, py + 34, 18, 8 + pulse, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#79b75a";
+  for (const [dx, dy, radius] of [[-10, -2, 4], [-3, -5, 5], [6, -3, 4], [12, 1, 3]]) {
+    ctx.beginPath();
+    ctx.arc(px + 24 + dx, py + 34 + dy, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawResourceSpotMarker(spot, px, py, pulse) {
+  const bob = pulse * 3;
+  ctx.save();
+  ctx.translate(px + TILE_SIZE / 2, py + TILE_SIZE / 2);
+  ctx.scale(0.5, 0.5);
+  ctx.translate(-(px + TILE_SIZE / 2), -(py + TILE_SIZE / 2));
+  switch (spot.resourceId) {
+    case "meadowHerb":
+      drawMeadowHerbSpot(px, py, pulse);
+      break;
+    case "glowMushroom":
+      drawGlowMushroomSpot(px, py, pulse);
+      break;
+    case "shardGem":
+      drawCrystalShape(px + 24, py + 27 - bob, 22, 32, "#7fd8ff", "#1f5f89", "rgba(127, 216, 255, 0.25)");
+      break;
+    case "emberGem":
+      drawCrystalShape(px + 24, py + 27 - bob, 22, 32, "#ff8a3d", "#8f332b", "rgba(255, 138, 61, 0.28)");
+      break;
+    case "caveMoss":
+      drawCaveMossSpot(px, py, pulse);
+      break;
+    default:
+      drawCrystalShape(px + 24, py + 27 - bob, 22, 32, "#f4d35e", "#7a5434", "rgba(255, 244, 174, 0.3)");
+      break;
+  }
+  ctx.restore();
+}
+
+function drawGatheringSpots() {
+  ensureGatheringSpots();
+
+  for (const spot of currentGatheringSpots()) {
+    const px = worldToScreenX(spot.x);
+    const py = worldToScreenY(spot.y);
+    if (px + TILE_SIZE < 0 || py + TILE_SIZE < 0 || px > canvas.width || py > canvas.height) continue;
+
+    const pulse = (Math.sin(performance.now() / 260 + spot.x + spot.y) + 1) / 2;
+    ctx.save();
+    ctx.globalAlpha = 0.86 + pulse * 0.14;
+    ctx.fillStyle = "rgba(255, 244, 174, 0.22)";
+    ctx.beginPath();
+    ctx.ellipse(px + 24, py + 38, 8 + pulse * 1.5, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    drawResourceSpotMarker(spot, px, py, pulse);
+    ctx.restore();
+  }
+}
+
 function drawWorld() {
   updateCamera();
 
@@ -554,12 +762,24 @@ function drawWorld() {
 
   drawWorldObjects(map);
 
+  drawGatheringSpots();
+
   drawCamp(gameState.world.camp);
 
   drawNpcs(map.npcs);
 
   const playerX = worldToScreenX(gameState.player.x);
   const playerY = worldToScreenY(gameState.player.y);
+  if (gameState.player.isSwimming) {
+    const ripple = (Math.sin(performance.now() / 180) + 1) / 2;
+    ctx.save();
+    ctx.strokeStyle = `rgba(232, 250, 255, ${0.45 + ripple * 0.25})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(playerX + TILE_SIZE / 2, playerY + 36, 17 + ripple * 4, 6 + ripple * 1.5, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
   drawPlayer(gameState.player, playerX, playerY);
 
   const elapsed = performance.now() - gameState.messageShownAt;
@@ -584,7 +804,6 @@ function drawWorld() {
   drawText(`HP ${getActiveCreature().hp}/${getActiveCreature().maxHp}`, canvas.width - 258, 68, { font: "17px Outfit", color: "#2a7f62" });
   drawText(`MP ${gameState.player.mp}/${gameState.player.maxMp}`, canvas.width - 150, 68, { font: "17px Outfit", color: "#3d5afe" });
   drawText(`Party ${gameState.player.party.length}/${PLAYER_PARTY_MAX_SIZE}`, canvas.width - 258, 90, { font: "17px Outfit" });
-  drawText(`Orbs ${gameState.player.orbs}`, canvas.width - 150, 90, { font: "17px Outfit", color: "#9c6644" });
   drawText("Enter: Menu", canvas.width - 258, 112, { font: "15px Outfit", color: "#b93c2f" });
 }
 
@@ -665,6 +884,9 @@ function render() {
     drawStartMenu();
   } else if (gameState.scene === "cutscene") {
     storyController.drawCutscene();
+  } else if (gameState.scene === "dialogue") {
+    drawWorld();
+    dialogueSceneController.drawDialogueScene();
   } else if (gameState.scene === "ascension") {
     drawAscensionScene();
   } else if (gameState.scene === "moveLearning") {
@@ -710,6 +932,14 @@ window.addEventListener("keydown", (event) => {
   if (gameState.scene === "cutscene") {
     if (confirmKeys.includes(key)) {
       storyController.advanceCutscene();
+      event.preventDefault();
+    }
+    return;
+  }
+
+  if (gameState.scene === "dialogue") {
+    if (confirmKeys.includes(key)) {
+      dialogueSceneController.advanceDialogueScene();
       event.preventDefault();
     }
     return;
@@ -769,7 +999,7 @@ window.addEventListener("keydown", (event) => {
   }
 
   if (gameState.scene === "battle") {
-    if (movementKeys.includes(key) || confirmKeys.includes(key)) {
+    if (movementKeys.includes(key) || confirmKeys.includes(key) || key === "Backspace") {
       battleController.handleBattleNavigation(key);
       event.preventDefault();
     }

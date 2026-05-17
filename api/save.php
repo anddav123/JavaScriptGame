@@ -89,6 +89,66 @@ function validate_creature_save(mixed $creature): bool
     return true;
 }
 
+function validate_quantity_map(mixed $value): bool
+{
+    if (!is_array($value)) return false;
+    if (count($value) > 100) return false;
+
+    foreach ($value as $key => $quantity) {
+        if (!is_valid_short_text($key, 80)) return false;
+        if (!is_number_between($quantity, 0, 999)) return false;
+    }
+
+    return true;
+}
+
+function validate_inventory_save(mixed $inventory): bool
+{
+    if ($inventory === null) return true;
+    if (!is_array($inventory)) return false;
+    if (!has_only_keys($inventory, ['items', 'resources'])) return false;
+
+    return validate_quantity_map($inventory['items'] ?? null)
+        && validate_quantity_map($inventory['resources'] ?? null);
+}
+
+function validate_learned_recipes_save(mixed $learnedRecipes): bool
+{
+    if ($learnedRecipes === null) return true;
+    if (!is_array($learnedRecipes)) return false;
+    if (count($learnedRecipes) > 100) return false;
+
+    foreach ($learnedRecipes as $key => $learned) {
+        if (!is_valid_short_text($key, 80)) return false;
+        if (!is_bool($learned)) return false;
+    }
+
+    return true;
+}
+
+function validate_player_skills_save(mixed $skills): bool
+{
+    if ($skills === null) return true;
+    if (!is_array($skills)) return false;
+    if (!has_only_keys($skills, ['swim'])) return false;
+
+    return is_bool($skills['swim'] ?? null);
+}
+
+function validate_tutorials_save(mixed $tutorials): bool
+{
+    if ($tutorials === null) return true;
+    if (!is_array($tutorials)) return false;
+    if (count($tutorials) > 100) return false;
+
+    foreach ($tutorials as $key => $seen) {
+        if (!is_valid_short_text($key, 80)) return false;
+        if (!is_bool($seen)) return false;
+    }
+
+    return true;
+}
+
 function validate_game_save(mixed $gameState): bool
 {
     if (!is_array($gameState)) return false;
@@ -107,12 +167,16 @@ function validate_game_save(mixed $gameState): bool
         'x',
         'y',
         'facing',
+        'skills',
         'potions',
         'orbs',
+        'inventory',
+        'learnedRecipes',
         'wins',
         'maxMp',
         'mp',
         'mpRechargeStepProgress',
+        'tutorials',
         'activeIndex',
         'party',
         'campCreatures'
@@ -123,8 +187,12 @@ function validate_game_save(mixed $gameState): bool
     if (!is_int_between($player['x'] ?? null, 0, 500)) return false;
     if (!is_int_between($player['y'] ?? null, 0, 500)) return false;
     if (!in_array($player['facing'] ?? null, VALID_FACINGS, true)) return false;
-    if (!is_number_between($player['potions'] ?? null, 0, 999)) return false;
-    if (!is_number_between($player['orbs'] ?? null, 0, 999)) return false;
+    if (!validate_player_skills_save($player['skills'] ?? null)) return false;
+    if (array_key_exists('potions', $player) && !is_number_between($player['potions'], 0, 999)) return false;
+    if (array_key_exists('orbs', $player) && !is_number_between($player['orbs'], 0, 999)) return false;
+    if (!validate_inventory_save($player['inventory'] ?? null)) return false;
+    if (!validate_learned_recipes_save($player['learnedRecipes'] ?? null)) return false;
+    if (!validate_tutorials_save($player['tutorials'] ?? null)) return false;
     if (!is_number_between($player['wins'] ?? null, 0, 1000000)) return false;
     if (!is_number_between($player['maxMp'] ?? null, 1, 999)) return false;
     if (!is_number_between($player['mp'] ?? null, 0, 999)) return false;

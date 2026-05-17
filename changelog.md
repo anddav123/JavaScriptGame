@@ -2,6 +2,27 @@
 
 Project changes are recorded here by date. The README stays focused on what the project is and how to run it.
 
+## 2026-05-16
+
+- Added inventory modules for item, orb, and resource counts with legacy `potions`/`orbs` migration.
+- Added Bag tabs for Items, Orbs, and Resources, with HP/MP tonic use outside battle.
+- Reworked battle item use into a single `Items` submenu listing HP and MP tonics together; item use consumes the player turn.
+- Added runtime-only map gathering spots for Meadow Herb, Glow Mushroom, Shard Gem, Ember Gem, and Cave Moss.
+- Added distinct canvas visuals for each gathering resource type.
+- Added shopkeeper-assisted crafting through Shopkeeper Lily and removed Lily's free restock behavior.
+- Added a reusable lightweight dialogue scene system for NPC tutorial panels without custom cutscene artwork.
+- Added Lily's first-time crafting/gathering tutorial dialogue before opening shop crafting.
+- Added Meadow Ranger's first-time battle-drop tutorial dialogue, gating battle resource drops until it is seen.
+- Added creature/map-flavoured battle resource drops after the ranger unlock.
+- Added learnable recipe state in saves and API validation.
+- Hid advanced recipes until learned; basic recipes are learned by default.
+- Added cave-tier tonic recipes for Greater Tonic and Greater Focus Tonic.
+- Added a locked Ember Capture Orb recipe using Ember Gem, plus stronger capture-orb handling in battle.
+- Added `~` water tiles with blue/white fleck rendering, Swim-gated movement, player swim prompts, and blocked-water messaging.
+- Updated save serialization/import and PHP save validation for inventory, tutorials, learned recipes, and player skills.
+- Removed legacy `player.potions` and `player.orbs` from new save output while keeping old-save migration into inventory items.
+- Updated map audio configuration to use `worldMaps[mapId].audio.track`.
+
 ## 2026-05-09
 
 - Added a five-creature party limit, with extra captured creatures sent to camp storage.

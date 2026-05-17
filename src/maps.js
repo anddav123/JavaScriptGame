@@ -3,7 +3,42 @@ export const worldMaps = {
     name: "Sunmeadow",
     mapType: "meadow",
     palette: { top: "#78c98b", bottom: "#5ea96f" },
+    audio: { track: "meadow" },
     encounterRate: 0.085,
+    gathering: {
+      maxActive: 10,
+      points: [
+        { x: 15, y: 1 },
+        { x: 70, y: 5 },
+        { x: 43, y: 1 },
+        { x: 1, y: 18 },
+        { x: 29, y: 18 },
+        { x: 29, y: 3 },
+        { x: 15, y: 17 },
+        { x: 57, y: 1 },
+        { x: 6, y: 8 },
+        { x: 21, y: 9 },
+        { x: 50, y: 5 },
+        { x: 36, y: 5 },
+        { x: 13, y: 10 },
+        { x: 7, y: 1 },
+        { x: 28, y: 10 },
+        { x: 8, y: 15 },
+        { x: 22, y: 16 },
+        { x: 22, y: 1 },
+        { x: 64, y: 1 },
+        { x: 1, y: 12 }
+      ],
+      resources: [
+        { id: "meadowHerb", weight: 6 },
+        { id: "glowMushroom", weight: 2 },
+        { id: "shardGem", weight: 1 }
+      ]
+    },
+    battleDrops: [
+      { id: "meadowHerb", weight: 2 },
+      { id: "glowMushroom", weight: 1 }
+    ],
     wildCreatures: ["Buzzybee", "Sproutrunk", "Pluma"],
     wildLevelRange: { min: 1, max: 6 },
     terrain: [
@@ -122,7 +157,21 @@ export const worldMaps = {
         name: "Meadow Ranger",
         spritePath: "assets/npc/ranger-sprite.png",
         patrol: { shape: "circle", radius: 1, intervalMs: 900 },
-        dialogue: "Keep an eye on the tall grass. New creature families have been spotted nearby."
+        dialogue: "Keep an eye on the tall grass. New creature families have been spotted nearby.",
+        introDialogue: {
+          id: "rangerBattleDropsIntroSeen",
+          speaker: "Meadow Ranger",
+          title: "Field Ranger",
+          portraitPath: "assets/dialogue/meadow-ranger-portrait.jpg",
+          spritePath: "assets/npc/ranger-sprite.png",
+          lines: [
+            "You're learning the field craft quickly. Here's a ranger trick.",
+            "Wild creatures sometimes leave useful materials behind after battle.",
+            "The material depends on the creature and where you found it.",
+            "Check your Bag's Resources tab after victories, then take anything useful to Lily."
+          ]
+        },
+        unlocksTutorial: "rangerBattleDropsIntroSeen"
       },
       {
         x: 62,
@@ -186,6 +235,7 @@ export const worldMaps = {
     mapType: "interior",
     palette: { top: "#000000", bottom: "#020202" },
     encounterRate: -1,
+    crafting: { station: "shop" },
     wildCreatures: [],
     terrain: [
       "WWWWWWWWWW",
@@ -253,8 +303,21 @@ export const worldMaps = {
         y: 2,
         name: "Shopkeeper Lily",
         spritePath: "assets/npc/shopkeeper-sprite.png",
-        restockInitialItems: true,
-        dialogue: "I'll reset your field kit to shop standard."
+        opensCraftingStation: true,
+        dialogue: "Bring me the right resources and I'll help you craft supplies.",
+        introDialogue: {
+          id: "lilyCraftingIntroSeen",
+          speaker: "Shopkeeper Lily",
+          title: "Shopkeeper",
+          portraitPath: "assets/dialogue/shopkeeper-lily-portrait.jpg",
+          spritePath: "assets/npc/shopkeeper-sprite.png",
+          lines: [
+            "Ah, a new gatherer! See those sparkling spots out in the grass?",
+            "Herbs, mushrooms, and gems can all be used to craft supplies.",
+            "Bring resources to me and I'll help turn them into tonics and capture orbs.",
+            "Special items need careful hands — that's what shopkeepers are for."
+          ]
+        }
       }
     ],
     triggers: [
@@ -342,7 +405,42 @@ export const worldMaps = {
     name: "Ember Cave",
     mapType: "cave",
     palette: { top: "#635166", bottom: "#362933" },
+    audio: { track: "emberCave" },
     encounterRate: 0.054,
+    gathering: {
+      maxActive: 10,
+      points: [
+        { x: 15, y: 1 },
+        { x: 56, y: 11 },
+        { x: 34, y: 12 },
+        { x: 1, y: 12 },
+        { x: 44, y: 1 },
+        { x: 21, y: 13 },
+        { x: 28, y: 1 },
+        { x: 3, y: 1 },
+        { x: 11, y: 11 },
+        { x: 45, y: 11 },
+        { x: 54, y: 2 },
+        { x: 36, y: 2 },
+        { x: 21, y: 5 },
+        { x: 27, y: 9 },
+        { x: 9, y: 4 },
+        { x: 4, y: 7 },
+        { x: 51, y: 7 },
+        { x: 16, y: 8 },
+        { x: 39, y: 9 },
+        { x: 32, y: 6 }
+      ],
+      resources: [
+        { id: "caveMoss", weight: 5 },
+        { id: "emberGem", weight: 3 },
+        { id: "shardGem", weight: 2 }
+      ]
+    },
+    battleDrops: [
+      { id: "caveMoss", weight: 2 },
+      { id: "emberGem", weight: 1 }
+    ],
     wildCreatures: ["Scorcha"],
     wildLevelRange: { min: 3, max: 12 },
     terrain: [
