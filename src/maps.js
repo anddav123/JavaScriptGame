@@ -6,7 +6,7 @@ export const worldMaps = {
     audio: { track: "meadow" },
     encounterRate: 0.085,
     gathering: {
-      maxActive: 10,
+      maxActive: 4,
       points: [
         { x: 15, y: 1 },
         { x: 70, y: 5 },
@@ -408,7 +408,7 @@ export const worldMaps = {
     audio: { track: "emberCave" },
     encounterRate: 0.054,
     gathering: {
-      maxActive: 10,
+      maxActive: 4,
       points: [
         { x: 15, y: 1 },
         { x: 56, y: 11 },
