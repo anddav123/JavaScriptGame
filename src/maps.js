@@ -170,8 +170,7 @@ export const worldMaps = {
             "The material depends on the creature and where you found it.",
             "Check your Bag's Resources tab after victories, then take anything useful to Lily."
           ]
-        },
-        unlocksTutorial: "rangerBattleDropsIntroSeen"
+        }
       },
       {
         x: 62,
