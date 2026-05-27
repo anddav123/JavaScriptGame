@@ -8,6 +8,7 @@ Project changes are recorded here by date. The README stays focused on what the 
 - Added default battle resource drop pools for every creature type.
 - Updated water tiles to use a more solid base colour while keeping animated flecks and shoreline edges.
 - Moved the Brookbend warning sign into the Brookbend map data.
+- Documented the Sunmeadow and Brookbend gatehouses as intentional edge-aligned map entrances.
 
 ## 2026-05-23
 
