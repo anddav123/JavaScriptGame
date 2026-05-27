@@ -239,6 +239,61 @@ export const creatureTemplates = {
       { level: 100, move: "plasmaCrown" }
     ],
     description: "A radiant hive guardian that conducts stormlight through its wings."
+  },
+  Ripplefin: {
+    species: "Ripplefin",
+    nickname: "Ripplefin",
+    color: "#4ba3c7",
+    type: creatureTypes.WATER,
+    spritePath: "assets/creatures/png/lilphant-sprite.png",
+    fallbackSpritePath: "assets/creatures/svg/lilphant-sprite.svg",
+    role: "Wildling",
+    maxHp: 38,
+    moves: ["waterPebble", "focus"],
+    learnset: [
+      { level: 8, move: "streamLash" },
+      { level: 16, move: "tidalToss" },
+      { level: 26, move: "mistCut" }
+    ],
+    description: "A bright river creature that darts through shallows in silver-blue flashes."
+  },
+  Reedlet: {
+    species: "Reedlet",
+    nickname: "Reedlet",
+    color: "#6ab36f",
+    type: creatureTypes.FLYING,
+    spritePath: "assets/creatures/png/pluma-sprite.png",
+    fallbackSpritePath: "assets/creatures/svg/pluma-sprite.svg",
+    role: "Wildling",
+    maxHp: 36,
+    moves: ["gustPeck", "focus"],
+    battleDrops: [
+      { id: "meadowHerb", weight: 3 },
+      { id: "glowMushroom", weight: 1 }
+    ],
+    learnset: [
+      { level: 7, move: "windShear" },
+      { level: 18, move: "mistCut" },
+      { level: 28, move: "stormDive" }
+    ],
+    description: "A reed-winged bird that hides among river grass before bursting into flight."
+  },
+  Pebblet: {
+    species: "Pebblet",
+    nickname: "Pebblet",
+    color: "#8d8f7a",
+    type: creatureTypes.STONE,
+    spritePath: "assets/creatures/png/sproutrunk-sprite.png",
+    fallbackSpritePath: "assets/creatures/svg/sproutrunk-sprite.svg",
+    role: "Wildling",
+    maxHp: 52,
+    moves: ["stonePebblePop", "focus"],
+    learnset: [
+      { level: 10, move: "pebbleBarrage" },
+      { level: 22, move: "stoneBoulderBash" },
+      { level: 34, move: "graniteSlam" }
+    ],
+    description: "A stubborn little stoneback that wedges itself into riverbanks during storms."
   }
 };
 
@@ -271,7 +326,8 @@ export const enemyTemplates = Object.values(creatureTemplates)
     spritePath: creature.spritePath,
     type: creature.type,
     maxHp: creature.maxHp,
-    moves: creature.moves
+    moves: creature.moves,
+    battleDrops: creature.battleDrops
   }));
 
 export const enemyTemplatesBySpecies = Object.fromEntries(

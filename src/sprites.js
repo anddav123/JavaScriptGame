@@ -145,7 +145,10 @@ export function createSpriteController({
     ensureCreatureSprite(species);
   }
 
-  function drawPlayer(player, x, y) {
+  function drawPlayer(player, x, y, options = {}) {
+    const visibleHeight = Number.isFinite(options.visibleHeight)
+      ? Math.max(1, Math.min(TILE_SIZE, Math.round(options.visibleHeight)))
+      : TILE_SIZE;
     const playerSprite = playerSpriteRecord.image;
     const frameSize = playerSpriteRecord.frameSize;
     const isSpriteUsable =
@@ -155,9 +158,14 @@ export function createSpriteController({
       playerSprite.naturalHeight >= frameSize * 4;
 
     if (!isSpriteUsable) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(x, y, TILE_SIZE, visibleHeight);
+      ctx.clip();
       drawRoundedRect(x + 8, y + 5, 32, 38, 14, "#ffffff", getActiveCreature().color);
       drawRoundedRect(x + 12, y + 9, 24, 30, 12, getActiveCreature().color);
       drawRoundedRect(x + 16, y + 13, 16, 10, 4, "#fff0d8");
+      ctx.restore();
       return;
     }
 
@@ -167,6 +175,9 @@ export function createSpriteController({
 
     ctx.save();
     ctx.imageSmoothingEnabled = false;
+    ctx.beginPath();
+    ctx.rect(x, y, TILE_SIZE, visibleHeight);
+    ctx.clip();
     ctx.drawImage(
       playerSprite,
       frameColumn * frameSize,

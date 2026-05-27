@@ -149,6 +149,32 @@ function validate_tutorials_save(mixed $tutorials): bool
     return true;
 }
 
+function validate_battle_history_save(mixed $battles): bool
+{
+    if ($battles === null) return true;
+    if (!is_array($battles)) return false;
+    if (count($battles) > 100) return false;
+
+    foreach ($battles as $mapId => $mapBattles) {
+        if (!is_valid_map_id($mapId)) return false;
+        if (!is_array($mapBattles) || count($mapBattles) > 200) return false;
+
+        foreach ($mapBattles as $opponentId => $record) {
+            if (!is_valid_short_text($opponentId, 80)) return false;
+            if (!is_array($record)) return false;
+            if (!has_only_keys($record, ['wins', 'losses', 'defeated', 'lastResult'])) return false;
+            if (!is_number_between($record['wins'] ?? null, 0, 1000000)) return false;
+            if (!is_number_between($record['losses'] ?? null, 0, 1000000)) return false;
+            if (!is_bool($record['defeated'] ?? null)) return false;
+
+            $lastResult = $record['lastResult'] ?? null;
+            if ($lastResult !== null && $lastResult !== 'win' && $lastResult !== 'loss') return false;
+        }
+    }
+
+    return true;
+}
+
 function validate_game_save(mixed $gameState): bool
 {
     if (!is_array($gameState)) return false;
@@ -168,8 +194,6 @@ function validate_game_save(mixed $gameState): bool
         'y',
         'facing',
         'skills',
-        'potions',
-        'orbs',
         'inventory',
         'learnedRecipes',
         'wins',
@@ -177,6 +201,7 @@ function validate_game_save(mixed $gameState): bool
         'mp',
         'mpRechargeStepProgress',
         'tutorials',
+        'battles',
         'activeIndex',
         'party',
         'campCreatures'
@@ -188,11 +213,10 @@ function validate_game_save(mixed $gameState): bool
     if (!is_int_between($player['y'] ?? null, 0, 500)) return false;
     if (!in_array($player['facing'] ?? null, VALID_FACINGS, true)) return false;
     if (!validate_player_skills_save($player['skills'] ?? null)) return false;
-    if (array_key_exists('potions', $player) && !is_number_between($player['potions'], 0, 999)) return false;
-    if (array_key_exists('orbs', $player) && !is_number_between($player['orbs'], 0, 999)) return false;
     if (!validate_inventory_save($player['inventory'] ?? null)) return false;
     if (!validate_learned_recipes_save($player['learnedRecipes'] ?? null)) return false;
     if (!validate_tutorials_save($player['tutorials'] ?? null)) return false;
+    if (!validate_battle_history_save($player['battles'] ?? null)) return false;
     if (!is_number_between($player['wins'] ?? null, 0, 1000000)) return false;
     if (!is_number_between($player['maxMp'] ?? null, 1, 999)) return false;
     if (!is_number_between($player['mp'] ?? null, 0, 999)) return false;

@@ -14,6 +14,8 @@ import { createBattleProgressionController } from "./battleProgression.js";
 import { addResource, itemCount, removeItem } from "./inventory.js";
 import { itemCatalog, resourceName } from "./items.js";
 import { getMoveCost, moveCatalog } from "./moves.js";
+import { resourceDropsForCreatureType } from "./resourceDrops.js";
+import { recordTrainerBattleResult, trainerBattleId, trainerBattleMapId } from "./trainerBattles.js";
 import { getTypeColor, typeEffectiveness } from "./types.js";
 
 function isConfirmKey(key) {
@@ -34,26 +36,6 @@ const TONIC_ANIMATION_DURATION = 850;
 const TONIC_LIQUID_COLOR = "#8e44ad";
 const BATTLE_DROP_CHANCE = 0.45;
 const BATTLE_DROP_TUTORIAL_ID = "rangerBattleDropsIntroSeen";
-
-const creatureResourceDrops = Object.freeze({
-  Buzzybee: [
-    { id: "meadowHerb", weight: 4 },
-    { id: "glowMushroom", weight: 1 }
-  ],
-  Sproutrunk: [
-    { id: "meadowHerb", weight: 5 },
-    { id: "glowMushroom", weight: 2 }
-  ],
-  Pluma: [
-    { id: "shardGem", weight: 2 },
-    { id: "meadowHerb", weight: 1 }
-  ],
-  Scorcha: [
-    { id: "emberGem", weight: 5 },
-    { id: "shardGem", weight: 2 },
-    { id: "caveMoss", weight: 1 }
-  ]
-});
 
 export function createBattleController({
   canvas,
@@ -557,6 +539,54 @@ export function createBattleController({
     gameState.encounterTransition.enemyName = template.name;
   }
 
+  function beginTrainerBattle(npc) {
+    const battle = npc?.battle;
+    const species = battle?.species;
+    const template = enemyTemplatesBySpecies[species];
+    if (!battle || !template) {
+      setMessage(`${npc?.name || "Trainer"} is not ready to battle.`);
+      return;
+    }
+
+    const level = Number.isFinite(battle.level)
+      ? clamp(Math.round(battle.level), CREATURE_MIN_LEVEL, CREATURE_MAX_LEVEL)
+      : CREATURE_MIN_LEVEL;
+    const maxHp = leveledMaxHpForSpecies(template.name, level);
+    clearKeys();
+    getActiveCreature().attackBoost = 0;
+    gameState.battle = {
+      trainer: {
+        name: npc.name,
+        id: trainerBattleId(npc),
+        mapId: trainerBattleMapId(gameState, npc),
+        victoryMessage: battle.victoryMessage,
+        npc
+      },
+      enemy: {
+        ...template,
+        level,
+        maxHp,
+        hp: maxHp,
+        attackBoost: 0,
+        moves: defaultMovesForLevel(template.name, level)
+      },
+      turn: "player",
+      log: [`${npc.name} sent out ${template.name} Lv ${level}!`],
+      afterBattleMessages: [],
+      afterBattleAscensions: [],
+      afterBattleLearnMoves: [],
+      animations: [],
+      buttons: [],
+      selectionIndex: 0,
+      menuMode: "actions",
+      itemIndex: 0
+    };
+    gameState.scene = "encounter";
+    gameState.encounterTransition.active = true;
+    gameState.encounterTransition.startedAt = performance.now();
+    gameState.encounterTransition.enemyName = template.name;
+  }
+
   function randomMoveId(moves) {
     return moves[Math.floor(Math.random() * moves.length)];
   }
@@ -594,7 +624,7 @@ export function createBattleController({
   }
 
   function resourceDropPoolForBattle(battle) {
-    const enemyDrops = creatureResourceDrops[battle.enemy.species] || creatureResourceDrops[battle.enemy.name] || [];
+    const enemyDrops = battle.enemy.battleDrops || resourceDropsForCreatureType(battle.enemy.type);
     const mapDrops = currentMap().battleDrops || [];
     return [...enemyDrops, ...mapDrops];
   }
@@ -720,16 +750,29 @@ export function createBattleController({
       let outcomeMessage = "";
       let ascensionScenes = [];
       if (playerWon) {
-        const victoryMessage = `${activeCreature.nickname} won in ${currentMap().name}. Total victories: ${gameState.player.wins}.`;
+        const victoryMessage = battle.trainer
+          ? `${activeCreature.nickname} defeated ${battle.trainer.name} in ${currentMap().name}. Total victories: ${gameState.player.wins}.`
+          : `${activeCreature.nickname} won in ${currentMap().name}. Total victories: ${gameState.player.wins}.`;
         const droppedResourceId = tryAwardBattleResourceDrop(battle);
         awardCreatureWinProgress(activeCreature);
+        if (battle.trainer) {
+          recordTrainerBattleResult(gameState, battle.trainer, "win");
+          if (gameState.world.activeTrainerChaseId === battle.trainer.id) {
+            gameState.world.activeTrainerChaseId = null;
+          }
+          if (battle.trainer.npc) {
+            battle.trainer.npc._chaseActive = false;
+            battle.trainer.npc._noticeUntil = 0;
+          }
+        }
         const milestoneMessages = battle.afterBattleMessages ?? [];
         ascensionScenes = battle.afterBattleAscensions ?? [];
         const learnMoves = battle.afterBattleLearnMoves ?? [];
         const rewardMessage = droppedResourceId
           ? `${battle.enemy.name} dropped 1 ${resourceName(droppedResourceId)}.`
           : "";
-        const outcomeMessages = [victoryMessage, rewardMessage, ...milestoneMessages].filter(Boolean);
+        const trainerMessage = battle.trainer?.victoryMessage || "";
+        const outcomeMessages = [victoryMessage, rewardMessage, trainerMessage, ...milestoneMessages].filter(Boolean);
         outcomeMessage = outcomeMessages.join(" ");
         if (learnMoves.length > 0 && typeof startMoveLearningSequence === "function") {
           gameState.battle = null;
@@ -758,6 +801,16 @@ export function createBattleController({
         outcomeMessage = gameState.world.camp
           ? `Your party fainted, then fully recovered back at camp.`
           : `Your party fainted, then fully recovered back at the start of your adventure.`;
+        if (battle.trainer) {
+          recordTrainerBattleResult(gameState, battle.trainer, "loss");
+          if (gameState.world.activeTrainerChaseId === battle.trainer.id) {
+            gameState.world.activeTrainerChaseId = null;
+          }
+          if (battle.trainer.npc) {
+            battle.trainer.npc._chaseActive = false;
+            battle.trainer.npc._noticeUntil = 0;
+          }
+        }
         gameState.battle = null;
 
         if (typeof onPartyFainted === "function") {
@@ -870,6 +923,11 @@ export function createBattleController({
       battle.menuMode = "actions";
       action.moveResult = { animationDuration: startTonicAnimation() };
     } else if (action.type === "catch") {
+      if (battle.trainer) {
+        writeBattleLog("You cannot capture another trainer's creature.");
+        return;
+      }
+
       const catchResult = attemptCatch();
       if (!catchResult.attempted) {
         return;
@@ -898,6 +956,11 @@ export function createBattleController({
         return;
       }
     } else if (action.type === "run") {
+      if (battle.trainer) {
+        writeBattleLog(`${battle.trainer.name} is waiting for a proper finish.`);
+        return;
+      }
+
       if (Math.random() < 0.65) {
         setMessage("You escaped safely.");
         gameState.scene = "world";
@@ -936,12 +999,21 @@ export function createBattleController({
       };
     });
 
+    const actionButtons = gameState.battle?.trainer
+      ? [
+          { type: "openItems", x: 490, y: 528, width: 146, height: 32 },
+          { type: "recoverMp", x: 646, y: 528, width: 146, height: 32 }
+        ]
+      : [
+          { type: "openItems", x: 490, y: 528, width: 94, height: 32 },
+          { type: "catch", x: 594, y: 528, width: 94, height: 32 },
+          { type: "recoverMp", x: 698, y: 528, width: 94, height: 32 },
+          { type: "run", x: 802, y: 528, width: 94, height: 32 }
+        ];
+
     return [
       ...moves,
-      { type: "openItems", x: 490, y: 528, width: 94, height: 32 },
-      { type: "catch", x: 594, y: 528, width: 94, height: 32 },
-      { type: "recoverMp", x: 698, y: 528, width: 94, height: 32 },
-      { type: "run", x: 802, y: 528, width: 94, height: 32 }
+      ...actionButtons
     ];
   }
 
@@ -1322,6 +1394,7 @@ export function createBattleController({
   return {
     beginPlayerTurn,
     beginEncounter,
+    beginTrainerBattle,
     drawBattle,
     drawMoveLearning,
     handleBattleNavigation,

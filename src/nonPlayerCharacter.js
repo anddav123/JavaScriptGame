@@ -127,13 +127,17 @@ export function createNonPlayerCharacterController({
   }
 
   function npcPatrolState(npc) {
+    const now = performance.now();
     if (!npc.patrol) {
-      return { x: npc.x, y: npc.y, facing: "down", frame: 0 };
+      const state = npc._patrolState || { x: npc.x, y: npc.y, facing: "down", frame: 0 };
+      if (npc._interactionPauseUntil > now) {
+        state.lastStepAt = now;
+      }
+      return state;
     }
 
     const steps = Math.max(1, npc.patrol.steps || 1);
     const intervalMs = Math.max(120, npc.patrol.intervalMs || 700);
-    const now = performance.now();
     const path = npcPatrolPath(npc);
 
     if (!npc._patrolState) {
@@ -165,6 +169,15 @@ export function createNonPlayerCharacterController({
     }
 
     const state = npc._patrolState;
+    if (npc._chaseActive) {
+      return state;
+    }
+
+    if (npc._interactionPauseUntil > now) {
+      state.lastStepAt = now;
+      return state;
+    }
+
     if (now - state.lastStepAt < intervalMs) {
       return state;
     }
@@ -223,8 +236,21 @@ export function createNonPlayerCharacterController({
     const visualState = animatedPatrolState(patrolState);
     const px = worldToScreenX(visualState.x);
     const py = worldToScreenY(visualState.y);
+    const walkBob = visualState.isMoving ? Math.round(Math.sin(visualState.movementProgress * Math.PI) * -2) : 0;
 
     if (px + TILE_SIZE < 0 || py + TILE_SIZE < 0 || px > canvas.width || py > canvas.height) return;
+
+    function drawNoticeMark() {
+      if (!(npc._noticeUntil > performance.now())) return;
+
+      const bob = Math.round(Math.sin(performance.now() / 90) * 2);
+      drawRoundedRect(px + 17, py + walkBob - 12 + bob, 14, 18, 6, "#fff8f0", "#b93c2f");
+      drawText("!", px + 24, py + walkBob + 3 + bob, {
+        align: "center",
+        font: "13px 'Press Start 2P'",
+        color: "#b93c2f"
+      });
+    }
 
     if (npc.spritePath) {
       let spriteRecord = npcSpriteCache.get(npc.spritePath);
@@ -246,7 +272,6 @@ export function createNonPlayerCharacterController({
         const frameCount = Math.max(1, Math.floor(spriteRecord.image.naturalWidth / frameSize));
         const frameColumn = Math.min(walkFrameForMovement(visualState, frameCount), frameCount - 1);
         const frameRow = facingRows[patrolState.facing] ?? facingRows.down;
-        const walkBob = visualState.isMoving ? Math.round(Math.sin(visualState.movementProgress * Math.PI) * -2) : 0;
         ctx.save();
         ctx.imageSmoothingEnabled = false;
         ctx.drawImage(
@@ -261,16 +286,16 @@ export function createNonPlayerCharacterController({
           TILE_SIZE
         );
         ctx.restore();
-        //drawText("?", px + 24, py + walkBob + 7, { align: "center", font: "13px 'Press Start 2P'", color: "#fff1cd" });
+        drawNoticeMark();
         return;
       }
     }
 
-    const walkBob = visualState.isMoving ? Math.round(Math.sin(visualState.movementProgress * Math.PI) * -3) : 0;
     drawRoundedRect(px + 13, py + walkBob + 12, 22, 20, 10, "#f5c79c", "#6d4b2f");
     drawRoundedRect(px + 11, py + walkBob + 28, 26, 17, 8, "#3d8f6f", "#245441");
     drawRoundedRect(px + 14, py + walkBob + 8, 20, 10, 6, "#6d4b2f");
     drawText("?", px + 24, py + walkBob + 7, { align: "center", font: "13px 'Press Start 2P'", color: "#fff1cd" });
+    drawNoticeMark();
   }
 
   function drawNpcs(npcs = []) {

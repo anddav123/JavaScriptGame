@@ -1,11 +1,8 @@
-import {
-  INITIAL_PLAYER_ORBS,
-  INITIAL_PLAYER_POTIONS,
-  TILE_SIZE
-} from "./constants.js";
-import { addResource, normalizeInventory, syncLegacyCounters } from "./inventory.js";
+import { TILE_SIZE } from "./constants.js";
+import { addResource } from "./inventory.js";
 import { resourceName } from "./items.js";
 import { worldMaps } from "./maps.js";
+import { hasDefeatedTrainer, trainerBattleId } from "./trainerBattles.js";
 
 export function createWorldController({
   canvas,
@@ -16,7 +13,9 @@ export function createWorldController({
   onEncounter,
   onCampInteract = () => {},
   onShopCraft = () => {},
-  onNpcDialogue = () => {}
+  onNpcDialogue = () => {},
+  onNpcBattle = () => {},
+  onSwimPrompt = () => {}
 }) {
   function currentMap() {
     return worldMaps[gameState.world.currentMapId];
@@ -51,19 +50,12 @@ export function createWorldController({
     return tileAt(x, y) === "~";
   }
 
-  function askToSwim() {
-    if (typeof window !== "undefined" && typeof window.confirm === "function") {
-      return window.confirm("The water is deep here. Do you want to swim?");
-    }
-
-    return false;
-  }
-
   function isBaseWalkable(x, y) {
     return tileAt(x, y) !== "W"
       && (!isWaterTile(x, y) || canSwim())
       && !getBuildingAt(x, y)
       && !getFurnitureAt(x, y)
+      && !getBlockingNatureAt(x, y)
       && !getNpcAt(x, y)
       && !getSignAt(x, y);
   }
@@ -193,12 +185,59 @@ export function createWorldController({
     });
   }
 
+  function getNatureAt(x, y) {
+    return (currentMap().nature || []).find((nature) => {
+      const width = nature.width || 1;
+      const height = nature.height || 1;
+      return x >= nature.x
+        && x < nature.x + width
+        && y >= nature.y
+        && y < nature.y + height;
+    });
+  }
+
+  function getBlockingNatureAt(x, y) {
+    const nature = getNatureAt(x, y);
+    return nature && nature.type !== "flowers" ? nature : null;
+  }
+
   function npcPosition(npc) {
     return npc._patrolState || { x: npc.x, y: npc.y };
   }
 
+  function ensureNpcRuntimeState(npc) {
+    if (!npc._patrolState) {
+      npc._patrolState = {
+        x: npc.x,
+        y: npc.y,
+        offset: 0,
+        direction: -1,
+        pathIndex: 0,
+        facing: "down",
+        frame: 0,
+        lastStepAt: performance.now(),
+        fromX: npc.x,
+        fromY: npc.y,
+        toX: npc.x,
+        toY: npc.y,
+        moveStartedAt: 0,
+        moveDuration: 0
+      };
+    }
+
+    return npc._patrolState;
+  }
+
   function getNpcAt(x, y) {
     return (currentMap().npcs || []).find((npc) => {
+      const position = npcPosition(npc);
+      return position.x === x && position.y === y;
+    });
+  }
+
+  function getOtherNpcAt(x, y, ignoredNpc) {
+    return (currentMap().npcs || []).find((npc) => {
+      if (npc === ignoredNpc) return false;
       const position = npcPosition(npc);
       return position.x === x && position.y === y;
     });
@@ -218,6 +257,201 @@ export function createWorldController({
     return tileY * TILE_SIZE - gameState.camera.y;
   }
 
+  function distanceToPlayer(x, y) {
+    return Math.abs(gameState.player.x - x) + Math.abs(gameState.player.y - y);
+  }
+
+  function trainerChaseId(npc) {
+    return trainerBattleId(npc);
+  }
+
+  function isNpcStepWalkable(npc, x, y) {
+    return tileAt(x, y) !== "W"
+      && !isWaterTile(x, y)
+      && !getBuildingAt(x, y)
+      && !getFurnitureAt(x, y)
+      && !getBlockingNatureAt(x, y)
+      && !getSignAt(x, y)
+      && !getTriggerAt(x, y)
+      && !getCampAt(x, y)
+      && !getOtherNpcAt(x, y, npc)
+      && !(gameState.player.x === x && gameState.player.y === y);
+  }
+
+  function isNpcReachablePlayerTile(x, y) {
+    return tileAt(x, y) !== "W"
+      && !isWaterTile(x, y)
+      && !getBuildingAt(x, y)
+      && !getFurnitureAt(x, y)
+      && !getBlockingNatureAt(x, y)
+      && !getSignAt(x, y)
+      && !getTriggerAt(x, y)
+      && !getCampAt(x, y);
+  }
+
+  function facingForStep(dx, dy, fallback = "down") {
+    if (Math.abs(dx) > Math.abs(dy)) return dx < 0 ? "left" : "right";
+    if (dy !== 0) return dy < 0 ? "up" : "down";
+    return fallback;
+  }
+
+  function npcChaseTargetTiles(npc) {
+    return [
+      { x: gameState.player.x, y: gameState.player.y - 1 },
+      { x: gameState.player.x, y: gameState.player.y + 1 },
+      { x: gameState.player.x - 1, y: gameState.player.y },
+      { x: gameState.player.x + 1, y: gameState.player.y }
+    ].filter((tile) => isNpcStepWalkable(npc, tile.x, tile.y));
+  }
+
+  function findNpcChaseStep(npc, startX, startY) {
+    const targetKeys = new Set(npcChaseTargetTiles(npc).map((tile) => `${tile.x},${tile.y}`));
+    if (targetKeys.size === 0) return null;
+
+    const queue = [{ x: startX, y: startY, firstStep: null }];
+    const visited = new Set([`${startX},${startY}`]);
+    const directions = [
+      { dx: 0, dy: -1 },
+      { dx: 0, dy: 1 },
+      { dx: -1, dy: 0 },
+      { dx: 1, dy: 0 }
+    ].sort((a, b) => (
+      distanceToPlayer(startX + a.dx, startY + a.dy)
+      - distanceToPlayer(startX + b.dx, startY + b.dy)
+    ));
+
+    while (queue.length > 0) {
+      const current = queue.shift();
+      const currentKey = `${current.x},${current.y}`;
+      if (targetKeys.has(currentKey)) {
+        return current.firstStep;
+      }
+
+      for (const direction of directions) {
+        const nextX = current.x + direction.dx;
+        const nextY = current.y + direction.dy;
+        const nextKey = `${nextX},${nextY}`;
+        if (visited.has(nextKey) || !isNpcStepWalkable(npc, nextX, nextY)) continue;
+
+        visited.add(nextKey);
+        queue.push({
+          x: nextX,
+          y: nextY,
+          firstStep: current.firstStep || { dx: direction.dx, dy: direction.dy }
+        });
+      }
+    }
+
+    return null;
+  }
+
+  function npcStepTowardPlayer(npc) {
+    const state = ensureNpcRuntimeState(npc);
+    const now = performance.now();
+    const stepInterval = Math.max(120, Math.round(npc.battle?.chaseStepMs ?? 220));
+    if (now - state.lastStepAt < stepInterval) return true;
+
+    const dx = gameState.player.x - state.x;
+    const dy = gameState.player.y - state.y;
+    const step = findNpcChaseStep(npc, state.x, state.y);
+    if (!step) {
+      state.facing = facingForStep(dx, dy, state.facing);
+      return false;
+    }
+
+    const nextX = state.x + step.dx;
+    const nextY = state.y + step.dy;
+    state.fromX = state.x;
+    state.fromY = state.y;
+    state.toX = nextX;
+    state.toY = nextY;
+    state.x = nextX;
+    state.y = nextY;
+    state.facing = facingForStep(step.dx, step.dy, state.facing);
+    state.frame = (state.frame + 1) % 3;
+    state.moveStartedAt = now;
+    state.moveDuration = stepInterval;
+    state.lastStepAt = now;
+    return true;
+  }
+
+  function isTrainerChaseLockActive() {
+    const activeChaseId = gameState.world.activeTrainerChaseId || null;
+    if (!activeChaseId) return false;
+    return (currentMap().npcs || []).some((npc) => (
+      npc._chaseActive
+      && trainerChaseId(npc) === activeChaseId
+      && !hasDefeatedTrainer(gameState, npc)
+    ));
+  }
+
+  function pauseNpcForInteraction(npc) {
+    const state = ensureNpcRuntimeState(npc);
+    const dx = gameState.player.x - state.x;
+    const dy = gameState.player.y - state.y;
+    const now = performance.now();
+    state.facing = facingForStep(dx, dy, state.facing);
+    state.frame = 0;
+    state.moveStartedAt = 0;
+    state.moveDuration = 0;
+    state.lastStepAt = now;
+    npc._interactionPauseUntil = now + 3200;
+  }
+
+  function updateNpcChases() {
+    for (const npc of currentMap().npcs || []) {
+      const battle = npc.battle;
+      if (!battle || hasDefeatedTrainer(gameState, npc)) {
+        npc._chaseActive = false;
+        continue;
+      }
+
+      const state = ensureNpcRuntimeState(npc);
+      const chaseId = trainerChaseId(npc);
+      const activeChaseId = gameState.world.activeTrainerChaseId || null;
+      if (activeChaseId && activeChaseId !== chaseId) {
+        npc._chaseActive = false;
+        continue;
+      }
+
+      const chaseRange = Math.max(1, Math.round(battle.chaseRange ?? 0));
+      const distance = distanceToPlayer(state.x, state.y);
+      if (!isNpcReachablePlayerTile(gameState.player.x, gameState.player.y)) {
+        npc._chaseActive = false;
+        continue;
+      }
+
+      if (!npc._chaseActive && (!chaseRange || distance > chaseRange)) {
+        continue;
+      }
+
+      if (!npc._chaseActive) {
+        npc._noticeUntil = performance.now() + 900;
+      }
+
+      gameState.world.activeTrainerChaseId = chaseId;
+      npc._chaseActive = true;
+
+      if (distance <= 1) {
+        onNpcBattle(npc);
+        return;
+      }
+
+      if (!npcStepTowardPlayer(npc)) {
+        npc._chaseActive = false;
+        if (gameState.world.activeTrainerChaseId === chaseId) {
+          gameState.world.activeTrainerChaseId = null;
+        }
+        continue;
+      }
+
+      if (distanceToPlayer(state.x, state.y) <= 1) {
+        onNpcBattle(npc);
+        return;
+      }
+    }
+  }
+
   function updateCamera() {
     const targetX = gameState.player.x * TILE_SIZE + TILE_SIZE / 2 - canvas.width / 2;
     const targetY = gameState.player.y * TILE_SIZE + TILE_SIZE / 2 - canvas.height / 2;
@@ -226,6 +460,21 @@ export function createWorldController({
   }
 
   function enterTrigger(trigger) {
+    const missingTutorial = (trigger.requiresTutorials || []).find((tutorialId) => (
+      !gameState.player.tutorials?.[tutorialId]
+    ));
+    if (missingTutorial) {
+      setMessage(trigger.lockedMessage || "This way is locked for now.");
+      return;
+    }
+
+    for (const npc of currentMap().npcs || []) {
+      npc._chaseActive = false;
+      npc._noticeUntil = 0;
+      delete npc._patrolState;
+    }
+    gameState.world.activeTrainerChaseId = null;
+
     gameState.world.currentMapId = trigger.targetMap;
     gameState.player.x = trigger.targetX;
     gameState.player.y = trigger.targetY;
@@ -259,6 +508,7 @@ export function createWorldController({
 
   function interactFacing() {
     if (gameState.scene !== "world") return;
+    if (isTrainerChaseLockActive()) return;
 
     const { dx, dy } = facingOffset();
     const targetX = gameState.player.x + dx;
@@ -294,13 +544,27 @@ export function createWorldController({
       return;
     }
 
+    const nature = getBlockingNatureAt(targetX, targetY);
+    if (nature) {
+      setMessage(nature.text || `${nature.name || "Plant life"} blocks the way.`);
+      return;
+    }
+
     const npc = getNpcAt(targetX, targetY);
     if (npc) {
-      if (npc.restockInitialItems) {
-        gameState.player.inventory = normalizeInventory(gameState.player.inventory, gameState.player);
-        gameState.player.inventory.items.minorTonic = INITIAL_PLAYER_POTIONS;
-        gameState.player.inventory.items.basicOrb = INITIAL_PLAYER_ORBS;
-        syncLegacyCounters(gameState);
+      pauseNpcForInteraction(npc);
+
+      if (npc.battle && !hasDefeatedTrainer(gameState, npc)) {
+        const chaseId = trainerChaseId(npc);
+        const activeChaseId = gameState.world.activeTrainerChaseId || null;
+        if (activeChaseId && activeChaseId !== chaseId) {
+          setMessage(`${npc.name} waits while another challenge is active.`);
+          return;
+        }
+
+        gameState.world.activeTrainerChaseId = chaseId;
+        onNpcBattle(npc);
+        return;
       }
 
       if (npc.opensCraftingStation) {
@@ -309,13 +573,8 @@ export function createWorldController({
         return;
       }
 
-      if (npc.introDialogue) {
+      if (npc.introDialogue || npc.grantsFlag || npc.grantsSkill || npc.requiresFlag) {
         onNpcDialogue(npc);
-        return;
-      }
-
-      if (npc.restockInitialItems) {
-        setMessage(`${npc.name}: ${npc.dialogue} Restocked to ${INITIAL_PLAYER_ORBS} capture orbs and ${INITIAL_PLAYER_POTIONS} minor tonics.`);
         return;
       }
 
@@ -339,11 +598,7 @@ export function createWorldController({
         return;
       }
 
-      if (askToSwim()) {
-        movePlayer(dx, dy, { skipSwimPrompt: true });
-      } else {
-        setMessage("You stay on dry land.");
-      }
+      onSwimPrompt({ dx, dy });
       return;
     }
 
@@ -354,6 +609,8 @@ export function createWorldController({
 
   function movePlayer(dx, dy, options = {}) {
     if (gameState.scene !== "world") return;
+    if (isTrainerChaseLockActive()) return;
+
     if (dx < 0) {
       gameState.player.facing = "left";
     } else if (dx > 0) {
@@ -373,8 +630,8 @@ export function createWorldController({
         return;
       }
 
-      if (!options.skipSwimPrompt && !isWaterTile(gameState.player.x, gameState.player.y) && !askToSwim()) {
-        setMessage("You stay on dry land.");
+      if (!options.skipSwimPrompt && !isWaterTile(gameState.player.x, gameState.player.y)) {
+        onSwimPrompt({ dx, dy });
         return;
       }
     }
@@ -404,6 +661,9 @@ export function createWorldController({
       return;
     }
 
+    updateNpcChases();
+    if (gameState.scene !== "world") return;
+
     if (tileAt(targetX, targetY) === "T" && Math.random() < currentMap().encounterRate) {
       onEncounter();
     }
@@ -416,6 +676,7 @@ export function createWorldController({
     currentGatheringSpots,
     ensureGatheringSpots,
     interactFacing,
+    isTrainerChaseLockActive,
     isWalkable,
     movePlayer,
     tileAt,
@@ -423,6 +684,7 @@ export function createWorldController({
     worldPixelHeight,
     worldPixelWidth,
     worldToScreenX,
-    worldToScreenY
+    worldToScreenY,
+    updateNpcChases
   };
 }

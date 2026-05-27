@@ -137,17 +137,17 @@ export const worldMaps = {
       },
       {
         x: 68,
-        y: 15,
-        width: 2,
-        height: 2,
-        door: { x: 68, y: 16 },
-        name: "Tiny Storehouse",
-        text: "Tiny Storehouse: a compact little building with a sturdy lock.",
-        lockedMessage: "The storehouse door is locked.",
+        y: 12,
+        width: 4,
+        height: 3,
+        door: { x: 70, y: 14 },
+        name: "East Gatehouse",
+        sign: "Gate",
+        text: "East Gatehouse: the road narrows through a guarded arch toward Brookbend.",
         wallColor: "#f0d7a6",
         trimColor: "#725135",
-        roofColor: "#b95e3c",
-        roofTrimColor: "#6d2d24"
+        roofColor: "#6b8f62",
+        roofTrimColor: "#3d5d37"
       }
     ],
     npcs: [
@@ -226,6 +226,17 @@ export const worldMaps = {
         targetX: 44,
         targetY: 13,
         message: "You step into Ember Cave."
+      },
+      {
+        x: 70,
+        y: 14,
+        kind: "route",
+        targetMap: "brookbend",
+        targetX: 1,
+        targetY: 26,
+        message: "You follow the east road to Brookbend Crossing.",
+        requiresTutorials: ["lilyCraftingIntroSeen", "rangerBattleDropsIntroSeen"],
+        lockedMessage: "Gone for lunch, Gatehouse Closed. Come back later."
       }
     ]
   },
@@ -480,6 +491,299 @@ export const worldMaps = {
         targetX: 68,
         targetY: 1,
         message: "You emerge back into Sunmeadow."
+      }
+    ]
+  },
+  brookbend: {
+    name: "Brookbend",
+    mapType: "meadow",
+    palette: { top: "#78c7d8", bottom: "#5fa76f" },
+    audio: { track: "meadow" },
+    encounterRate: 0.075,
+    gathering: {
+      maxActive: 4,
+      points: [
+        { x: 5, y: 17 },
+        { x: 10, y: 24 },
+        { x: 15, y: 17 },
+        { x: 24, y: 23 },
+        { x: 30, y: 15 },
+        { x: 34, y: 25 },
+        { x: 6, y: 27 },
+        { x: 29, y: 18 }
+      ],
+      resources: [
+        { id: "meadowHerb", weight: 5 },
+        { id: "glowMushroom", weight: 2 },
+        { id: "shardGem", weight: 2 }
+      ]
+    },
+    battleDrops: [
+      { id: "meadowHerb", weight: 2 },
+      { id: "shardGem", weight: 1 }
+    ],
+    wildCreatures: ["Ripplefin", "Reedlet", "Pebblet", "Pluma"],
+    wildLevelRange: { min: 4, max: 10 },
+    terrain: [
+      "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGWWWGGGGGGGGGWWWGGGGGGGGGWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGRRRRGGGGGWGWGGGGGRRRRGGWGWGGGGGWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGRRRRGGGGGWWWGGGGGRRRRGGWWWGGGGGWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGRRRRGGGGGGGGGGGGGGGG~~~WWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGRRRRGGGGGGGGGG~~~~~~~~~WWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~GGGWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGGGGG~~~~~~~~~~GGGGGGGGGTTTTTGGGWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGGGGG~~~~~~~GGGGGGGGGGGGGGGGGWWWWWWWWWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGGGGG~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGWWWWWWWWWWWWWWWW",
+      "WGGGGGGGGGGGGGGGRGGG~~~~GGGGGGGGGGGGGGGWGGGGGGGGGGGGGGGGGWWWWWWWWWWW",
+      "WGGGGGGGGGGGTTTGRGG~~~~GGGGTTTRRRGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGWWW",
+      "WGGGTTTGGGGGTTTGRGG~~~~GGGGTTTGGGTTTGGGGGGGGGGGTTTTTTTTTTTTTGGGGGGGW",
+      "WGGGTTTGGGGGGGGGRGG~~~~GGGGGGGGGGTTTGGGGGTTTTTTTTTTTTTTTTTTTTTTTTTTW",
+      "WGGGGGGGGGGGGGGGRGG~~~~GGGGGGGGGGGGGGGGGGGGTTTTGGGTTTTTTTGGGGGGGGGGW",
+      "WGGGGGGGGGGGWWWGRGG~~~~GGGWWWGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
+      "WGGGGGGGGGGGGGGGRGG~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGW",
+      "WGGRRRRRRRRRRRRRRRR~~~~RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRW",
+      "WGGRTTGTGTTTTTGTTGG~~~~GGGGGGGGGGGGGGGGWWWWWWWWWWWWWWWWWGGGGGGGRRRRW",
+      "WTRRTTTGTGTTTTTTTGG~~~~GGGGGGGGTTTGGGGGWTTTTTTTTTTTTTTTTTTTRRRRRRRRW",
+      "WTRTRRRRGTGGTTTGTGG~~~~GGGGTTTGGGTTTGGGWTTTTTTTTTTTTTTTRRRRRRRTTTTTW",
+      "WGRRRTTRRRRGTTTTTTG~~~~GGGGTTTGGGGGGGGGWTTTTTTTTRRRRRRRRRRTTTTTTTTTW",
+      "WTTTTTTTTTRRRRRGTGG~~~~GGGGGGGGGGGGGGGGWTTTTTTTTRRTTTTTTTTTTTTTTTTTW",
+      "WRRRTTTTTTTTTTRTGTG~~~~GGGGGGGGGGGGGGGGWTTTTTTTRRTTTTTTTTTTTTTTTTTTW",
+      "WRRRRRRRRRRRRRRTTTG~~~~GGGGGGGGGGGGGGGGWGGGGGGGRRGGGGGGGGGGGGGGGGGTW",
+      "WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW"
+    ],
+    signs: [
+      { x: 18, y: 8, text: "Brook Town: keep parcels dry and boots drier." },
+      { x: 15, y: 19, text: "North path: Brook Town. Follow the path to town." },
+      { x: 17, y: 19, text: "East road: Brookbend Crossing. Ask the warden before entering the water." },
+      { x: 3, y: 19, text: "Brookbend Crossing: shallow water ahead. Ask the warden before entering the current." },
+      { x: 30, y: 21, text: "The reeds shake with new creatures after rain." }
+    ],
+    buildings: [
+      {
+        x: 16,
+        y: 2,
+        width: 3,
+        height: 3,
+        door: { x: 17, y: 4 },
+        name: "Warden Cottage",
+        sign: "John",
+        text: "Warden Cottage: river maps and waterproof satchels hang by the door.",
+        wallColor: "#e8c47f",
+        trimColor: "#7a5434",
+        roofColor: "#3d8f6f",
+        roofTrimColor: "#245441"
+      },
+      {
+        x: 29,
+        y: 2,
+        width: 3,
+        height: 3,
+        door: { x: 30, y: 4 },
+        name: "Brook Storehouse",
+        sign: "Store",
+        text: "Brook Storehouse: sealed crates are stacked above the damp floorboards.",
+        lockedMessage: "The storehouse is locked."
+      },
+      {
+        x: 0,
+        y: 24,
+        width: 2,
+        height: 3,
+        door: { x: 1, y: 26 },
+        name: "Sunmeadow Gatehouse",
+        sign: "Gate",
+        text: "Sunmeadow Gatehouse: a small road post marking the way back to New Town.",
+        wallColor: "#f0d7a6",
+        trimColor: "#725135",
+        roofColor: "#6b8f62",
+        roofTrimColor: "#3d5d37"
+      }
+    ],
+    nature: [
+      {
+        type: "tree",
+        x: 5,
+        y: 12,
+        width: 2,
+        height: 2,
+        name: "River Ash",
+        text: "A river ash leans toward the sound of running water."
+      },
+      {
+        type: "tree",
+        x: 34,
+        y: 12,
+        width: 2,
+        height: 2,
+        name: "Old Brook Oak",
+        text: "The old brook oak has deep roots and a hollow where small creatures shelter."
+      },
+      {
+        type: "tree",
+        x: 59,
+        y: 24,
+        width: 2,
+        height: 2,
+        name: "Reedbank Tree",
+        text: "A sturdy tree marks the edge of the reedbank."
+      },
+       {
+        type: "tree",
+        x: 4,
+        y: 25,
+        width: 2,
+        height: 2,
+        name: "Pathside tree"
+      },
+      {
+        type: "tree",
+        x: 1,
+        y: 20,
+        width: 2,
+        height: 2,
+        name: "Pathside tree"
+      },
+      {
+        type: "tree",
+        x: 10,
+        y: 22,
+        width: 2,
+        height: 2,
+        name: "Pathside tree"
+      },
+      {
+        type: "tree",
+        x: 15,
+        y: 24,
+        width: 2,
+        height: 2,
+        name: "Pathside tree"
+      },
+      {
+        type: "bush",
+        x: 18,
+        y: 23,
+        name: "Riverside bush",
+        text: "Glossy leaves hold beads of river spray."
+      },
+      {
+        type: "bush",
+        x: 12,
+        y: 21,
+        width: 2,
+        height: 1,
+        name: "River Bush",
+        text: "Glossy leaves hold beads of river spray."
+      },
+      {
+        type: "bush",
+        x: 31,
+        y: 19,
+        name: "Pathside Bush",
+        text: "A pathside bush has been trimmed back by passing boots."
+      },
+       {
+        type: "bush",
+        x: 2,
+        y: 25,
+        width: 2,
+        height: 1,
+        name: "Pathside Bush"
+      }, 
+      {
+        type: "bush",
+        x: 6,
+        y: 26,
+        name: "Small Bush"
+      },
+      {
+        type: "flowers",
+        x: 27,
+        y: 13,
+        name: "Brook Flowers",
+        text: "Tiny flowers brighten the damp bank."
+      },
+      {
+        type: "flowers",
+        x: 49,
+        y: 27,
+        name: "Reed Flowers",
+        text: "Small flowers poke through the reeds."
+      }
+    ],
+    npcs: [
+      {
+        x: 18,
+        y: 5,
+        name: "Elin",
+        spritePath: "assets/npc/shopkeeper-sprite.png",
+        dialogue: "John left her waterproof parcel here. Please take it back to her at the crossing.",
+        grantsFlag: "brookParcelCollected",
+        rewardMessage: "Here's John's parcel. Keep it dry on the way back."
+      },
+      {
+        x: 25,
+        y: 8,
+        name: "Brook Town Ranger",
+        spritePath: "assets/npc/ranger-sprite.png",
+        patrol: { axis: "x", steps: 2, intervalMs: 1200 },
+        dialogue: "John won't teach the crossing until her parcel arrives. She takes river work seriously."
+      },
+      {
+        x: 10,
+        y: 19,
+        name: "Brook Warden John",
+        spritePath: "assets/npc/ranger-sprite.png",
+        patrol: { axis: "y", steps: 1, intervalMs: 1000 },
+        dialogue: "Keep your shoulders loose and follow the current, not your panic.",
+        requiresFlag: "brookParcelCollected",
+        blockedDialogue: "I can't leave the crossing yet. Please collect my parcel from Elin up in Brook Town first.",
+        grantsSkill: "swim",
+        rewardMessage: "Thanks for bringing the parcel. You learned to swim. Deep water is now passable.",
+        introDialogue: {
+          id: "brookWardenSwimLessonSeen",
+          speaker: "Brook Warden John",
+          title: "Brook Warden",
+          portraitPath: "assets/dialogue/meadow-ranger-portrait.jpg",
+          spritePath: "assets/npc/ranger-sprite.png",
+          lines: [
+            "You found Elin and brought the parcel. Good. That earns you a proper lesson.",
+            "The crossing looks calm, but Brookbend pulls sideways under the surface.",
+            "If you fight it, you tire. If you angle with it, the water carries you safely.",
+            "Take a breath, step in from the bank, and keep your lead creature close.",
+            "There. You've got it. From now on, you can swim across deep water."
+          ]
+        }
+      },
+      {
+        x: 27,
+        y: 20,
+        name: "Tamsin",
+        spritePath: "assets/npc/redshirt-sprite.png",
+        patrol: { axis: "x", steps: 2, intervalMs: 1100 },
+        dialogue: "You made the crossing. That means you're ready for a proper battle.",
+        battle: {
+          id: "tamsin",
+          species: "Pebblet",
+          level: 8,
+          chaseRange: 4,
+          victoryMessage: "Tamsin steps aside and points toward the reeds beyond the bridge."
+        }
+      }
+    ],
+    triggers: [
+      {
+        x: 1,
+        y: 26,
+        kind: "route-exit",
+        targetMap: "sunmeadow",
+        targetX: 70,
+        targetY: 14,
+        message: "You return to Sunmeadow."
       }
     ]
   },

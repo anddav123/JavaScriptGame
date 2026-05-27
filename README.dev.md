@@ -50,7 +50,11 @@ For small refactors, prefer moving cohesive behavior into one of these modules b
 - `wildLevelRange` controls the inclusive random level range for wild encounters
 - Sunmeadow currently spawns wild creatures from levels 1-6
 - Ember Cave currently spawns wild creatures from levels 3-12
+- Brookbend Crossing currently spawns wild creatures from levels 4-10 and introduces Swim-gated traversal
+- Brook Town is the northern area of Brookbend used for John's parcel errand before the Swim lesson
 - `triggers` let the player move between maps by stepping on door or cave tiles
+- NPCs can define a `battle` block for one-off trainer battles tracked by a persisted defeated flag
+- Trainer battle NPCs can set `battle.chaseRange` to follow the player and start battle when adjacent
 - NPC patrols can be static, horizontal/vertical, or circular depending on their map data
 - NPC movement is visually smoothed in `src/nonPlayerCharacter.js`, while player movement keeps the original tile-step behavior in `src/world.js`
 

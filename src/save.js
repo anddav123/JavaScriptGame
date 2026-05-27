@@ -6,8 +6,9 @@ import {
   SAVE_VERSION
 } from "./constants.js";
 import { creatureTemplates } from "./creatures.js";
-import { normalizeInventory, normalizeLearnedRecipes, syncLegacyCounters } from "./inventory.js";
+import { normalizeInventory, normalizeLearnedRecipes } from "./inventory.js";
 import { worldMaps } from "./maps.js";
+import { normalizeTrainerBattleHistory } from "./trainerBattles.js";
 
 export function createSaveController({
   gameState,
@@ -314,13 +315,14 @@ export function createSaveController({
         y: gameState.player.y,
         facing: gameState.player.facing,
         skills: normalizePlayerSkills(gameState.player.skills),
-        inventory: normalizeInventory(gameState.player.inventory, gameState.player),
+        inventory: normalizeInventory(gameState.player.inventory),
         learnedRecipes: normalizeLearnedRecipes(gameState.player.learnedRecipes),
         wins: gameState.player.wins,
         maxMp: gameState.player.maxMp,
         mp: gameState.player.mp,
         mpRechargeStepProgress: gameState.player.mpRechargeStepProgress,
         tutorials: { ...(gameState.player.tutorials || {}) },
+        battles: normalizeTrainerBattleHistory(gameState.player.battles),
         activeIndex: gameState.player.activeIndex,
         party: gameState.player.party.map(serializeCreature),
         campCreatures: (gameState.player.campCreatures || []).map(serializeCreature)
@@ -444,6 +446,9 @@ export function createSaveController({
       ? clamp(parsedSave.player.activeIndex, 0, party.length - 1)
       : 0;
     const facing = PLAYER_FACING_ROWS[parsedSave.player.facing] !== undefined ? parsedSave.player.facing : "down";
+    const tutorials = parsedSave.player.tutorials && typeof parsedSave.player.tutorials === "object" && !Array.isArray(parsedSave.player.tutorials)
+      ? Object.fromEntries(Object.entries(parsedSave.player.tutorials).filter(([key, value]) => typeof key === "string" && typeof value === "boolean"))
+      : {};
     const nextPlayer = {
       ...gameState.player,
       x: Number.isInteger(parsedSave.player.x) ? parsedSave.player.x : 1,
@@ -453,13 +458,12 @@ export function createSaveController({
       walkFrame: 0,
       lastMovedAt: 0,
       skills: normalizePlayerSkills(parsedSave.player.skills),
-      inventory: normalizeInventory(parsedSave.player.inventory, parsedSave.player),
+      inventory: normalizeInventory(parsedSave.player.inventory),
       learnedRecipes: normalizeLearnedRecipes(parsedSave.player.learnedRecipes),
       wins: Number.isFinite(parsedSave.player.wins) ? Math.max(0, Math.round(parsedSave.player.wins)) : 0,
       maxMp: Number.isFinite(parsedSave.player.maxMp) ? Math.max(1, Math.round(parsedSave.player.maxMp)) : gameState.player.maxMp,
-      tutorials: parsedSave.player.tutorials && typeof parsedSave.player.tutorials === "object" && !Array.isArray(parsedSave.player.tutorials)
-        ? Object.fromEntries(Object.entries(parsedSave.player.tutorials).filter(([key, value]) => typeof key === "string" && typeof value === "boolean"))
-        : {},
+      tutorials,
+      battles: normalizeTrainerBattleHistory(parsedSave.player.battles),
       activeIndex,
       campCreatures,
       party
@@ -487,7 +491,6 @@ export function createSaveController({
       throw new Error("Save position is blocked on that map.");
     }
 
-    syncLegacyCounters(gameState);
     gameState.scene = "world";
     gameState.menu.mode = "main";
     gameState.menu.mainIndex = 0;

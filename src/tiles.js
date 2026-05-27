@@ -381,40 +381,25 @@ function createWaterTileCanvas(variant) {
   waterCanvas.height = TILE_SIZE;
 
   const waterCtx = waterCanvas.getContext("2d");
-  const waterGradient = waterCtx.createLinearGradient(0, 0, TILE_SIZE, TILE_SIZE);
-  const bases = [
-    ["#2f9ed6", "#1f76b8"],
-    ["#38aadd", "#226fb0"],
-    ["#2b8ed0", "#1f67a7"],
-    ["#43b8e3", "#267bbd"]
-  ][variant];
-  waterGradient.addColorStop(0, bases[0]);
-  waterGradient.addColorStop(1, bases[1]);
-  waterCtx.fillStyle = waterGradient;
+  waterCtx.fillStyle = "#2f9ed6";
   waterCtx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
-
-  const flecks = [
-    [[6, 11, 14, 3, "rgba(174, 229, 255, 0.5)"], [27, 29, 12, 2, "rgba(255, 255, 255, 0.42)"], [15, 38, 18, 2, "rgba(89, 190, 232, 0.45)"]],
-    [[9, 25, 16, 2, "rgba(255, 255, 255, 0.38)"], [29, 12, 10, 3, "rgba(172, 233, 255, 0.5)"], [3, 39, 20, 2, "rgba(80, 184, 228, 0.45)"]],
-    [[5, 17, 12, 2, "rgba(169, 229, 255, 0.5)"], [22, 35, 17, 3, "rgba(255, 255, 255, 0.36)"], [31, 5, 12, 2, "rgba(92, 195, 236, 0.45)"]],
-    [[8, 34, 16, 2, "rgba(255, 255, 255, 0.4)"], [24, 19, 18, 3, "rgba(176, 233, 255, 0.48)"], [4, 8, 15, 2, "rgba(78, 177, 223, 0.45)"]]
-  ][variant];
-
-  waterCtx.lineCap = "round";
-  for (const [x, y, width, lineWidth, color] of flecks) {
-    waterCtx.strokeStyle = color;
-    waterCtx.lineWidth = lineWidth;
-    waterCtx.beginPath();
-    waterCtx.moveTo(x, y);
-    waterCtx.quadraticCurveTo(x + width / 2, y - 3, x + width, y);
-    waterCtx.stroke();
-  }
 
   return waterCanvas;
 }
 
+const waterFlecks = [
+  [[6, 11, 14, 3, "#aee5ff", 0], [27, 29, 12, 2, "#c6d8f9", 1.7], [15, 38, 18, 2, "#59bee8", 3.1]],
+  [[9, 25, 16, 2, "#b4e7fa", 1.2], [29, 12, 10, 3, "#ace9ff", 2.6], [3, 39, 20, 2, "#50b8e4", 4]],
+  [[5, 17, 12, 2, "#a9e5ff", 2.1], [22, 35, 17, 3, "#d3f7ff", 3.5], [31, 5, 12, 2, "#5cc3ec", 0.8]],
+  [[8, 34, 16, 2, "#9ee6f6", 2.8], [24, 19, 18, 3, "#b0e9ff", 0.4], [4, 8, 15, 2, "#4eb1df", 1.9]]
+];
+
 function tileVariant(mapX, mapY, xWeight, yWeight, variantCount) {
   return Math.abs(mapX * xWeight + mapY * yWeight) % variantCount;
+}
+
+function isGrassBankTile(tile) {
+  return tile === "G" || tile === "T" || tile === "R";
 }
 
 export function createTileRenderer({ ctx }) {
@@ -430,7 +415,7 @@ export function createTileRenderer({ ctx }) {
     cave: [0, 1, 2, 3].map((variant) => createGrassTileCanvas(variant, true, "cave"))
   };
 
-  function drawMapTile(tile, px, py, mapX = 0, mapY = 0, mapType = "meadow") {
+  function drawMapTile(tile, px, py, mapX = 0, mapY = 0, mapType = "meadow", neighbors = null) {
     const grassTheme = grassTileCanvases[mapType] ? mapType : "meadow";
 
     if (tile === "W") {
@@ -461,12 +446,185 @@ export function createTileRenderer({ ctx }) {
     if (tile === "~") {
       const waterVariant = tileVariant(mapX, mapY, 7, 43, waterTileCanvases.length);
       ctx.drawImage(waterTileCanvases[waterVariant], px, py);
+      drawWaterBankEdges(px, py, mapX, mapY, neighbors);
+      drawWaterFlecks(waterVariant, px, py, mapX, mapY);
       return;
     }
 
     const grassTiles = grassTileCanvases[grassTheme];
     const grassVariant = tileVariant(mapX, mapY, 11, 37, grassTiles.length);
     ctx.drawImage(grassTiles[grassVariant], px, py);
+  }
+
+  function drawWaterBankEdges(px, py, mapX, mapY, neighbors) {
+    if (!neighbors) return;
+
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    const phase = now / 620 + mapX * 0.41 + mapY * 0.27;
+    const topBank = isGrassBankTile(neighbors.up);
+    const bottomBank = isGrassBankTile(neighbors.down);
+    const leftBank = isGrassBankTile(neighbors.left);
+    const rightBank = isGrassBankTile(neighbors.right);
+
+    ctx.save();
+    ctx.lineJoin = "round";
+
+    if (topBank) {
+      drawWaterBankStrip(px, py, phase, true);
+    }
+
+    if (bottomBank) {
+      drawWaterBankStrip(px, py + TILE_SIZE, phase + 1.6, false);
+    }
+
+    if (leftBank) {
+      drawWaterBankSideStrip(px, py, phase + 3.2, true);
+    }
+
+    if (rightBank) {
+      drawWaterBankSideStrip(px + TILE_SIZE, py, phase + 4.8, false);
+    }
+
+    if (topBank && leftBank) {
+      drawWaterBankCorner(px, py, phase + 0.4, true, true);
+    }
+
+    if (topBank && rightBank) {
+      drawWaterBankCorner(px + TILE_SIZE, py, phase + 1.1, false, true);
+    }
+
+    if (bottomBank && leftBank) {
+      drawWaterBankCorner(px, py + TILE_SIZE, phase + 1.8, true, false);
+    }
+
+    if (bottomBank && rightBank) {
+      drawWaterBankCorner(px + TILE_SIZE, py + TILE_SIZE, phase + 2.5, false, false);
+    }
+
+    ctx.restore();
+  }
+
+  function drawWaterBankStrip(px, edgeY, phase, isTopEdge) {
+    const direction = isTopEdge ? 1 : -1;
+    const innerY = edgeY + direction * 6;
+    const midWave = Math.sin(phase) * 1.5;
+    const endWave = Math.sin(phase + 1.2) * 1.3;
+
+    ctx.fillStyle = "#72bf6a";
+    ctx.beginPath();
+    ctx.moveTo(px, edgeY);
+    ctx.lineTo(px + TILE_SIZE, edgeY);
+    ctx.lineTo(px + TILE_SIZE, innerY + endWave * direction);
+    ctx.bezierCurveTo(
+      px + 38,
+      innerY + (2 + midWave) * direction,
+      px + 24,
+      innerY + (-2 - midWave) * direction,
+      px,
+      innerY + endWave * direction
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(216, 246, 157, 0.58)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(px + 1, innerY + endWave * direction);
+    ctx.bezierCurveTo(
+      px + 18,
+      innerY + (-2 - midWave) * direction,
+      px + 34,
+      innerY + (2 + midWave) * direction,
+      px + TILE_SIZE - 1,
+      innerY + endWave * direction
+    );
+    ctx.stroke();
+  }
+
+  function drawWaterBankSideStrip(edgeX, py, phase, isLeftEdge) {
+    const direction = isLeftEdge ? 1 : -1;
+    const innerX = edgeX + direction * 6;
+    const midWave = Math.sin(phase) * 1.5;
+    const endWave = Math.sin(phase + 1.2) * 1.3;
+
+    ctx.fillStyle = "#72bf6a";
+    ctx.beginPath();
+    ctx.moveTo(edgeX, py);
+    ctx.lineTo(edgeX, py + TILE_SIZE);
+    ctx.lineTo(innerX + endWave * direction, py + TILE_SIZE);
+    ctx.bezierCurveTo(
+      innerX + (2 + midWave) * direction,
+      py + 38,
+      innerX + (-2 - midWave) * direction,
+      py + 24,
+      innerX + endWave * direction,
+      py
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(216, 246, 157, 0.58)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(innerX + endWave * direction, py + 1);
+    ctx.bezierCurveTo(
+      innerX + (-2 - midWave) * direction,
+      py + 18,
+      innerX + (2 + midWave) * direction,
+      py + 34,
+      innerX + endWave * direction,
+      py + TILE_SIZE - 1
+    );
+    ctx.stroke();
+  }
+
+  function drawWaterBankCorner(cornerX, cornerY, phase, isLeftEdge, isTopEdge) {
+    const xDirection = isLeftEdge ? 1 : -1;
+    const yDirection = isTopEdge ? 1 : -1;
+    const radius = 17 + Math.sin(phase) * 1.5;
+
+    ctx.fillStyle = "#72bf6a";
+    ctx.beginPath();
+    ctx.moveTo(cornerX, cornerY);
+    ctx.lineTo(cornerX + xDirection * radius, cornerY);
+    ctx.quadraticCurveTo(
+      cornerX + xDirection * radius,
+      cornerY + yDirection * radius,
+      cornerX,
+      cornerY + yDirection * radius
+    );
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(216, 246, 157, 0.62)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cornerX + xDirection * (radius - 2), cornerY + yDirection * 2);
+    ctx.quadraticCurveTo(
+      cornerX + xDirection * (radius - 1),
+      cornerY + yDirection * (radius - 1),
+      cornerX + xDirection * 2,
+      cornerY + yDirection * (radius - 2)
+    );
+    ctx.stroke();
+  }
+
+  function drawWaterFlecks(variant, px, py, mapX, mapY) {
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    ctx.save();
+    ctx.lineCap = "round";
+    for (const [x, y, width, lineWidth, color, phase] of waterFlecks[variant]) {
+      const opacity = 0.18 + ((Math.sin(now / 520 + phase + mapX * 0.33 + mapY * 0.21) + 1) / 2) * 0.42;
+      const drift = Math.sin(now / 760 + phase + mapY * 0.17) * 1.4;
+      ctx.globalAlpha = opacity;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineWidth;
+      ctx.beginPath();
+      ctx.moveTo(px + x + drift, py + y);
+      ctx.quadraticCurveTo(px + x + width / 2 + drift, py + y - 3, px + x + width + drift, py + y);
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 
   return {

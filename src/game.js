@@ -4,8 +4,6 @@ import {
   CREATURE_MIN_LEVEL,
   CREATURE_XP_PER_LEVEL,
   INITIAL_PLAYER_MAX_MP,
-  INITIAL_PLAYER_ORBS,
-  INITIAL_PLAYER_POTIONS,
   PLAYER_PARTY_MAX_SIZE,
   PLAYER_MP_RECHARGE_AMOUNT,
   PLAYER_MP_RECHARGE_STEP_INTERVAL,
@@ -93,6 +91,7 @@ const gameState = {
     camp: null,
     start: { mapId: "sunmeadow", x: 1, y: 1 }
   },
+  swimPrompt: null,
   player: {
     x: 1,
     y: 1,
@@ -100,8 +99,6 @@ const gameState = {
     isSwimming: false,
     walkFrame: 0,
     lastMovedAt: 0,
-    potions: INITIAL_PLAYER_POTIONS,
-    orbs: INITIAL_PLAYER_ORBS,
     inventory: createInitialInventory(),
     learnedRecipes: createInitialLearnedRecipes(),
     skills: { swim: false },
@@ -110,6 +107,7 @@ const gameState = {
     mp: INITIAL_PLAYER_MAX_MP,
     mpRechargeStepProgress: 0,
     tutorials: {},
+    battles: {},
     activeIndex: 0,
     campCreatures: [],
     party: [
@@ -139,7 +137,9 @@ const worldController = createWorldController({
   },
   onCampInteract: () => openCampMenu(),
   onShopCraft: (npc) => startNpcDialogueFromWorld(npc, { onComplete: () => openShopCraftMenuFromWorld() }),
-  onNpcDialogue: (npc) => startNpcDialogueFromWorld(npc)
+  onNpcDialogue: (npc) => startNpcDialogueFromWorld(npc),
+  onNpcBattle: (npc) => startTrainerChallengeDialogue(npc),
+  onSwimPrompt: (prompt) => openSwimPrompt(prompt)
 });
 
 const {
@@ -149,10 +149,12 @@ const {
   currentGatheringSpots,
   ensureGatheringSpots,
   interactFacing,
+  isTrainerChaseLockActive,
   isWalkable,
   movePlayer,
   tileAt,
   updateCamera,
+  updateNpcChases,
   worldToScreenX,
   worldToScreenY
 } = worldController;
@@ -295,6 +297,19 @@ const dialogueSceneController = createDialogueSceneController({
   wrapText
 });
 
+function startTrainerChallengeDialogue(npc) {
+  const challengeLine = npc?.battle?.challengeLine || `${npc.name} challenges you to a battle!`;
+  dialogueSceneController.startDialogueScene({
+    speaker: npc.name,
+    title: "Trainer",
+    portraitPath: npc.introDialogue?.portraitPath || null,
+    spritePath: npc.spritePath || null,
+    lines: [challengeLine]
+  }, {
+    onComplete: () => battleController.beginTrainerBattle(npc)
+  });
+}
+
 const {
   drawMenuOverlay,
   handleMenuNavigation,
@@ -321,9 +336,37 @@ function showNpcMessage(npc) {
   setMessage(`${npc.name}: ${npc.dialogue}`);
 }
 
+function applyNpcRewards(npc) {
+  if (npc?.grantsFlag && !gameState.player.tutorials?.[npc.grantsFlag]) {
+    gameState.player.tutorials = {
+      ...(gameState.player.tutorials || {}),
+      [npc.grantsFlag]: true
+    };
+    setMessage(`${npc.name}: ${npc.rewardMessage || npc.dialogue}`);
+    return true;
+  }
+
+  if (npc?.grantsSkill === "swim" && !gameState.player.skills?.swim) {
+    gameState.player.skills = {
+      ...(gameState.player.skills || {}),
+      swim: true
+    };
+    setMessage(`${npc.name}: ${npc.rewardMessage || "You learned to swim."}`);
+    return true;
+  }
+
+  return false;
+}
+
 startNpcDialogueFromWorld = (npc, options = {}) => {
   const introDialogue = npc?.introDialogue;
   const tutorialId = introDialogue?.id;
+  const requiredFlag = npc?.requiresFlag;
+
+  if (requiredFlag && !gameState.player.tutorials?.[requiredFlag]) {
+    setMessage(`${npc.name}: ${npc.blockedDialogue || npc.dialogue}`);
+    return;
+  }
 
   if (introDialogue && tutorialId && !gameState.player.tutorials?.[tutorialId]) {
     gameState.player.tutorials = {
@@ -334,8 +377,10 @@ startNpcDialogueFromWorld = (npc, options = {}) => {
       onComplete: () => {
         if (typeof options.onComplete === "function") {
           options.onComplete();
-        } else {
+        } else if (!applyNpcRewards(npc)) {
           showNpcMessage(npc);
+        } else {
+          return;
         }
       }
     });
@@ -344,8 +389,10 @@ startNpcDialogueFromWorld = (npc, options = {}) => {
 
   if (typeof options.onComplete === "function") {
     options.onComplete();
-  } else {
+  } else if (!applyNpcRewards(npc)) {
     showNpcMessage(npc);
+  } else {
+    return;
   }
 };
 
@@ -508,6 +555,11 @@ function handleWorldInput() {
     return;
   }
 
+  if (isTrainerChaseLockActive()) {
+    keys.clear();
+    return;
+  }
+
   if (keys.has("ArrowUp") || keys.has("w")) {
     movePlayer(0, -1);
   } else if (keys.has("ArrowDown") || keys.has("s")) {
@@ -519,6 +571,86 @@ function handleWorldInput() {
   }
 
   keys.clear();
+}
+
+function openSwimPrompt({ dx, dy }) {
+  keys.clear();
+  gameState.swimPrompt = {
+    dx,
+    dy,
+    selectionIndex: 0
+  };
+  gameState.scene = "swimPrompt";
+}
+
+function closeSwimPrompt() {
+  gameState.swimPrompt = null;
+  gameState.scene = "world";
+}
+
+function handleSwimPromptNavigation(key) {
+  const prompt = gameState.swimPrompt;
+  if (!prompt) {
+    closeSwimPrompt();
+    return;
+  }
+
+  if (key === "ArrowUp" || key === "ArrowDown" || key === "w" || key === "s") {
+    prompt.selectionIndex = prompt.selectionIndex === 0 ? 1 : 0;
+    return;
+  }
+
+  if (key === "Backspace" || key === "Escape") {
+    setMessage("You stay on dry land.");
+    closeSwimPrompt();
+    return;
+  }
+
+  if (key === "Enter" || key === " " || key === "Spacebar") {
+    const shouldSwim = prompt.selectionIndex === 0;
+    const { dx, dy } = prompt;
+    closeSwimPrompt();
+    if (shouldSwim) {
+      movePlayer(dx, dy, { skipSwimPrompt: true });
+    } else {
+      setMessage("You stay on dry land.");
+    }
+  }
+}
+
+function drawSwimPromptOverlay() {
+  const prompt = gameState.swimPrompt;
+  if (!prompt) return;
+
+  const panelWidth = 420;
+  const panelHeight = 190;
+  const panelX = (canvas.width - panelWidth) / 2;
+  const panelY = canvas.height - panelHeight - 36;
+  const options = ["Swim", "Stay"];
+
+  ctx.save();
+  ctx.fillStyle = "rgba(12, 32, 45, 0.28)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drawRoundedRect(panelX, panelY, panelWidth, panelHeight, 20, "rgba(255, 248, 238, 0.96)", "#3d271d");
+  drawText("The water is deep here.", panelX + 28, panelY + 42, {
+    font: "18px 'Press Start 2P'",
+    color: "#b93c2f"
+  });
+  drawText("Do you want to swim?", panelX + 28, panelY + 78, {
+    font: "22px Outfit",
+    color: "#4a2c21"
+  });
+
+  options.forEach((label, index) => {
+    const selected = prompt.selectionIndex === index;
+    const y = panelY + 108 + index * 34;
+    drawRoundedRect(panelX + 28, y, panelWidth - 56, 28, 10, selected ? "#2a9d8f" : "rgba(125, 108, 92, 0.14)", selected ? "#1f5f58" : null);
+    drawText(label, panelX + 48, y + 20, {
+      font: "16px 'Press Start 2P'",
+      color: selected ? "#fff8f0" : "#694435"
+    });
+  });
+  ctx.restore();
 }
 
 function drawCamp(camp) {
@@ -755,7 +887,13 @@ function drawWorld() {
         worldToScreenY(y),
         x,
         y,
-        map.mapType
+        map.mapType,
+        {
+          up: tileAt(x, y - 1),
+          down: tileAt(x, y + 1),
+          left: tileAt(x - 1, y),
+          right: tileAt(x + 1, y)
+        }
       );
     }
   }
@@ -772,15 +910,21 @@ function drawWorld() {
   const playerY = worldToScreenY(gameState.player.y);
   if (gameState.player.isSwimming) {
     const ripple = (Math.sin(performance.now() / 180) + 1) / 2;
+    drawPlayer(gameState.player, playerX, playerY, { visibleHeight: 33 });
     ctx.save();
+    ctx.fillStyle = `rgba(34, 139, 196, ${0.18 + ripple * 0.08})`;
+    ctx.beginPath();
+    ctx.ellipse(playerX + TILE_SIZE / 2, playerY + 35, 19 + ripple * 4, 7 + ripple * 1.5, 0, 0, Math.PI * 2);
+    ctx.fill();
     ctx.strokeStyle = `rgba(232, 250, 255, ${0.45 + ripple * 0.25})`;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.ellipse(playerX + TILE_SIZE / 2, playerY + 36, 17 + ripple * 4, 6 + ripple * 1.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(playerX + TILE_SIZE / 2, playerY + 35, 17 + ripple * 4, 5 + ripple * 1.5, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
+  } else {
+    drawPlayer(gameState.player, playerX, playerY);
   }
-  drawPlayer(gameState.player, playerX, playerY);
 
   const elapsed = performance.now() - gameState.messageShownAt;
   let messageOpacity = 1;
@@ -880,6 +1024,10 @@ function render() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   audioController.sync();
 
+  if (gameState.scene === "world") {
+    updateNpcChases();
+  }
+
   if (gameState.scene === "start") {
     drawStartMenu();
   } else if (gameState.scene === "cutscene") {
@@ -901,6 +1049,8 @@ function render() {
       drawMenuOverlay();
     } else if (gameState.scene === "campMenu") {
       drawCampMenuOverlay();
+    } else if (gameState.scene === "swimPrompt") {
+      drawSwimPromptOverlay();
     }
   }
 
@@ -958,6 +1108,21 @@ window.addEventListener("keydown", (event) => {
   if (gameState.scene === "moveLearning") {
     if (movementKeys.includes(key) || confirmKeys.includes(key) || key === "Backspace") {
       battleController.handleMoveLearningNavigation(key);
+      event.preventDefault();
+    }
+    return;
+  }
+
+  if (gameState.scene === "swimPrompt") {
+    if (movementKeys.includes(key) || confirmKeys.includes(key) || key === "Backspace" || key === "Escape") {
+      handleSwimPromptNavigation(key);
+      event.preventDefault();
+    }
+    return;
+  }
+
+  if (gameState.scene === "world" && isTrainerChaseLockActive()) {
+    if (movementKeys.includes(key) || confirmKeys.includes(key) || key === "Backspace" || key === "Escape") {
       event.preventDefault();
     }
     return;

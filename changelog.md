@@ -2,6 +2,36 @@
 
 Project changes are recorded here by date. The README stays focused on what the project is and how to run it.
 
+## 2026-05-27
+
+- Refactored battle resource drops into a type-based `resourceDrops` module, with optional per-creature overrides for special cases.
+- Added default battle resource drop pools for every creature type.
+- Updated water tiles to use a more solid base colour while keeping animated flecks and shoreline edges.
+- Moved the Brookbend warning sign into the Brookbend map data.
+
+## 2026-05-23
+
+- Removed legacy `player.potions` and `player.orbs` compatibility paths; item quantities now live only in `player.inventory.items`.
+
+## 2026-05-22
+
+- Added Brookbend Crossing as a new water-focused route east of Sunmeadow.
+- Added Brook Warden John's swim lesson dialogue and in-game Swim skill unlock.
+- Expanded Brookbend with a north route to Brook Town, where Elin gives the parcel required before John teaches Swim.
+- Merged Brook Town into the northern half of Brookbend for a seamless parcel errand flow.
+- Extended Brookbend's river north-to-south so Swim is required to reach the east-bank trainer route.
+- Added trainer-style NPC battles, including Tamsin's Brookbend encounter.
+- Added dedicated save-state tracking for trainer battle wins, losses, defeated state, and last result.
+- Added trainer chase behaviour so battle NPCs can follow the player from range and start battle when adjacent.
+- Trainer chases now only trigger on NPC-reachable player tiles and reset cleanly when changing maps.
+- Trainer chases now show a brief `!` notice marker and only one trainer can actively chase until that trainer is defeated.
+- Trainer battles now show a challenge dialogue before the battle transition starts.
+- Interacted NPCs now face the player and pause until the message moment has passed.
+- Water tile flecks now fade and drift to give rivers a subtle animated movement effect.
+- Added Ripplefin, Reedlet, and Pebblet to the creature roster and Brookbend wild encounter pool.
+- Added battle resource drops for the new Brookbend creatures.
+- Replaced the browser Swim confirmation dialog with an in-game keyboard-controlled prompt.
+
 ## 2026-05-16
 
 - Added inventory modules for item, orb, and resource counts with legacy `potions`/`orbs` migration.

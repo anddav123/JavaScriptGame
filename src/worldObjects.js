@@ -206,6 +206,132 @@ export function createWorldObjectRenderer({
     }
   }
 
+  function drawNatureObject(nature) {
+    const px = worldToScreenX(nature.x);
+    const py = worldToScreenY(nature.y);
+    const width = (nature.width || 1) * TILE_SIZE;
+    const height = (nature.height || 1) * TILE_SIZE;
+
+    if (isOffscreen(px, py - TILE_SIZE * 1.5, width, height + TILE_SIZE * 1.5)) return;
+
+    ctx.fillStyle = "rgba(45, 27, 20, 0.2)";
+    ctx.beginPath();
+    ctx.ellipse(px + width / 2, py + height - 7, Math.max(12, width / 2 - 5), 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (nature.type === "tree") {
+      const trunkX = px + width / 2 - 9;
+      const trunkY = py + height - 44;
+      drawRoundedRect(trunkX, trunkY, 18, 37, 3, "#8b5f3d", "#5b3723");
+      ctx.strokeStyle = "rgba(91, 55, 35, 0.5)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(trunkX + 6, trunkY + 5);
+      ctx.lineTo(trunkX + 5, trunkY + 33);
+      ctx.moveTo(trunkX + 12, trunkY + 9);
+      ctx.lineTo(trunkX + 13, trunkY + 34);
+      ctx.stroke();
+
+      const leafY = py + height - 75;
+      const clusters = [
+        [width / 2, -4, 30, "#2f8f55"],
+        [width / 2 - 20, 10, 25, "#3fa761"],
+        [width / 2 + 20, 10, 25, "#347f4d"],
+        [width / 2 - 7, 23, 26, "#4eb66c"],
+        [width / 2 + 11, 27, 22, "#3a9a5a"]
+      ];
+
+      for (const [cx, cy, radius, color] of clusters) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(px + cx, leafY + cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.strokeStyle = "rgba(216, 246, 157, 0.38)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(px + width / 2 - 12, leafY + 6, 10, Math.PI * 0.8, Math.PI * 1.35);
+      ctx.arc(px + width / 2 + 12, leafY + 15, 9, Math.PI * 1.05, Math.PI * 1.55);
+      ctx.stroke();
+      return;
+    }
+
+    if (nature.type === "bush") {
+      const centerX = 24;
+      const centerY = 24;
+      const midLeaves = [
+        [-12, -8, 12], [2, -13, 14], [14, -5, 12],
+        [12, 8, 12], [-2, 10, 14], [-15, 4, 12],
+        [0, 0, 17]
+      ];
+      const highlights = [
+        [-14, -14, 4, 7, -0.55, "#4eb66c"],
+        [2, -18, 4, 7, 0.65, "#347f4d"],
+        [16, -9, 4, 7, 0.75, "#4eb66c"],
+        [-17, 4, 4, 7, 1.15, "#347f4d"],
+        [2, 7, 4, 7, -0.2, "#3fa761"],
+        [14, 9, 3, 5, 0.75, "#4eb66c"],
+        [-4, -3, 3, 5, 0.2, "#347f4d"]
+      ];
+
+      ctx.save();
+      ctx.translate(px, py + height - TILE_SIZE);
+      ctx.scale(width / TILE_SIZE, height / TILE_SIZE);
+      ctx.beginPath();
+      ctx.rect(-4, -4, TILE_SIZE + 8, TILE_SIZE + 2);
+      ctx.clip();
+
+      ctx.fillStyle = "#2f8f55";
+      ctx.beginPath();
+      ctx.arc(centerX - 2, centerY + 4, 22, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = "#3fa761";
+      for (const [x, y, radius] of midLeaves) {
+        ctx.beginPath();
+        ctx.arc(centerX + x, centerY + y, radius, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      for (const [x, y, radiusX, radiusY, rotation, color] of highlights) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.ellipse(centerX + x, centerY + y, radiusX, radiusY, rotation, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+      return;
+    }
+
+    if (nature.type === "flowers") {
+      ctx.strokeStyle = "#2f8f55";
+      ctx.lineWidth = 2;
+      const blooms = [
+        [12, 30, "#f5c542"],
+        [22, 24, "#f08ab5"],
+        [33, 31, "#ffffff"],
+        [38, 22, "#f5c542"],
+        [17, 38, "#9fd7ff"]
+      ];
+
+      for (const [x, y, color] of blooms) {
+        ctx.beginPath();
+        ctx.moveTo(px + x, py + y + 7);
+        ctx.lineTo(px + x, py + y);
+        ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(px + x, py + y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      return;
+    }
+
+    drawRoundedRect(px + 9, py + 24, width - 18, height - 30, 8, "#3fa761", "#2f8f55");
+  }
+
   function drawBuilding(building) {
     const px = worldToScreenX(building.x);
     const py = worldToScreenY(building.y);
@@ -333,6 +459,10 @@ export function createWorldObjectRenderer({
       drawFurniture(furniture);
     }
 
+    for (const nature of map.nature || []) {
+      drawNatureObject(nature);
+    }
+
     for (const sign of map.signs || []) {
       drawSign(sign);
     }
@@ -341,6 +471,7 @@ export function createWorldObjectRenderer({
   return {
     drawBuilding,
     drawFurniture,
+    drawNatureObject,
     drawSign,
     drawTrigger,
     drawWorldObjects
