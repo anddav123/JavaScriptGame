@@ -7,14 +7,43 @@ import {
   CREATURE_HP_PER_LEVEL,
   CREATURE_MAX_LEVEL,
   CREATURE_MIN_LEVEL,
-  CREATURE_XP_PER_LEVEL,
-  CREATURE_XP_PER_WIN
+  CREATURE_XP_BASE_PER_WIN,
+  CREATURE_XP_MAX_PER_WIN,
+  CREATURE_XP_MIN_PER_WIN,
+  CREATURE_XP_TRAINER_MULTIPLIER
 } from "./constants.js";
+import {
+  levelForTotalXp,
+  maxCreatureXp,
+  migrateCreatureXp
+} from "./creatureXp.js";
 import { getMoveCost, moveCatalog } from "./moves.js";
 import { getTypeColor } from "./types.js";
 
 function isConfirmKey(key) {
   return key === "Enter" || key === " " || key === "Spacebar";
+}
+
+/**
+ * XP for a win scales with enemy level vs the active creature's level.
+ * Equal levels grant CREATURE_XP_BASE_PER_WIN; stronger foes grant more, weaker foes less.
+ * Trainer battles apply CREATURE_XP_TRAINER_MULTIPLIER.
+ */
+export function xpForBattleWin(playerLevel, enemyLevel, { isTrainer = false } = {}) {
+  const safePlayerLevel = Number.isFinite(playerLevel)
+    ? Math.max(CREATURE_MIN_LEVEL, Math.round(playerLevel))
+    : CREATURE_MIN_LEVEL;
+  const safeEnemyLevel = Number.isFinite(enemyLevel)
+    ? Math.max(CREATURE_MIN_LEVEL, Math.round(enemyLevel))
+    : CREATURE_MIN_LEVEL;
+
+  const relative = safeEnemyLevel / safePlayerLevel;
+  let xp = Math.round(CREATURE_XP_BASE_PER_WIN * relative);
+  if (isTrainer) {
+    xp = Math.round(xp * CREATURE_XP_TRAINER_MULTIPLIER);
+  }
+
+  return Math.min(CREATURE_XP_MAX_PER_WIN, Math.max(CREATURE_XP_MIN_PER_WIN, xp));
 }
 
 export function createBattleProgressionController({
@@ -67,10 +96,6 @@ export function createBattleProgressionController({
     };
   }
 
-  function maxCreatureXp() {
-    return (CREATURE_MAX_LEVEL - CREATURE_MIN_LEVEL) * CREATURE_XP_PER_LEVEL;
-  }
-
   function leveledMaxHpForSpecies(species, level) {
     const template = creatureTemplates[species];
     if (!template) return 1;
@@ -78,12 +103,11 @@ export function createBattleProgressionController({
   }
 
   function normalizeCreatureProgress(creature) {
-    creature.level = Number.isFinite(creature.level)
+    const savedLevel = Number.isFinite(creature.level)
       ? clamp(Math.round(creature.level), CREATURE_MIN_LEVEL, CREATURE_MAX_LEVEL)
       : CREATURE_MIN_LEVEL;
-    creature.xp = Number.isFinite(creature.xp)
-      ? clamp(Math.round(creature.xp), 0, maxCreatureXp())
-      : (creature.level - CREATURE_MIN_LEVEL) * CREATURE_XP_PER_LEVEL;
+    creature.xp = migrateCreatureXp(savedLevel, creature.xp);
+    creature.level = levelForTotalXp(creature.xp);
     creature.maxHp = Number.isFinite(creature.maxHp)
       ? Math.max(1, Math.round(creature.maxHp))
       : leveledMaxHpForSpecies(creature.species, creature.level);
@@ -200,21 +224,18 @@ export function createBattleProgressionController({
     }
   }
 
-  function awardCreatureWinProgress(creature) {
+  function awardCreatureWinProgress(creature, { enemyLevel, isTrainer = false } = {}) {
     normalizeCreatureProgress(creature);
     const previousXp = creature.xp;
-    creature.xp = clamp(creature.xp + CREATURE_XP_PER_WIN, 0, maxCreatureXp());
+    const awardedXp = xpForBattleWin(creature.level, enemyLevel ?? creature.level, { isTrainer });
+    creature.xp = clamp(creature.xp + awardedXp, 0, maxCreatureXp());
     const gainedXp = creature.xp - previousXp;
 
     if (gainedXp > 0) {
       writeBattleLog(`${creature.nickname} gained ${gainedXp} XP.`);
     }
 
-    const nextLevel = clamp(
-      Math.floor(creature.xp / CREATURE_XP_PER_LEVEL) + CREATURE_MIN_LEVEL,
-      CREATURE_MIN_LEVEL,
-      CREATURE_MAX_LEVEL
-    );
+    const nextLevel = levelForTotalXp(creature.xp);
     const previousLevel = applyLevelGain(creature, nextLevel);
     tryAscendCreature(creature);
     if (Number.isFinite(previousLevel) && nextLevel > previousLevel) {
@@ -297,6 +318,7 @@ export function createBattleProgressionController({
     handleMoveLearningNavigation,
     leveledMaxHpForSpecies,
     moveName,
-    moveSummary
+    moveSummary,
+    xpForBattleWin
   };
 }

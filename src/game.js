@@ -2,7 +2,6 @@ import {
   CREATURE_HP_PER_LEVEL,
   CREATURE_MAX_LEVEL,
   CREATURE_MIN_LEVEL,
-  CREATURE_XP_PER_LEVEL,
   INITIAL_PLAYER_MAX_MP,
   PLAYER_PARTY_MAX_SIZE,
   PLAYER_MP_RECHARGE_AMOUNT,
@@ -16,6 +15,12 @@ import { createCampMenuController } from "./campMenu.js";
 import { createCanvasUi } from "./canvasUi.js";
 import { cutscenes } from "./cutscenes.js";
 import { creatureTemplates, defaultMovesForLevel, MAX_CREATURE_MOVES } from "./creatures.js";
+import {
+  levelForTotalXp,
+  maxCreatureXp,
+  migrateCreatureXp,
+  totalXpForLevel
+} from "./creatureXp.js";
 import { createDialogueSceneController } from "./dialogueScene.js";
 import { createInitialInventory, createInitialLearnedRecipes } from "./inventory.js";
 import { createMenuController } from "./menu.js";
@@ -416,14 +421,23 @@ storyController.schedulePreloadCutsceneImages();
 
 function createCreatureInstance(species, overrides = {}) {
   const template = creatureTemplates[species];
-  const level = Number.isFinite(overrides.level)
+  const requestedLevel = Number.isFinite(overrides.level)
     ? clamp(Math.round(overrides.level), CREATURE_MIN_LEVEL, CREATURE_MAX_LEVEL)
     : CREATURE_MIN_LEVEL;
-  const defaultXp = (level - CREATURE_MIN_LEVEL) * CREATURE_XP_PER_LEVEL;
-  const maxCreatureXp = (CREATURE_MAX_LEVEL - CREATURE_MIN_LEVEL) * CREATURE_XP_PER_LEVEL;
-  const xp = Number.isFinite(overrides.xp)
-    ? clamp(Math.round(overrides.xp), 0, maxCreatureXp)
-    : defaultXp;
+
+  let xp;
+  let level;
+  if (Number.isFinite(overrides.xp) && Number.isFinite(overrides.level)) {
+    xp = migrateCreatureXp(requestedLevel, overrides.xp);
+    level = levelForTotalXp(xp);
+  } else if (Number.isFinite(overrides.xp)) {
+    xp = clamp(Math.round(overrides.xp), 0, maxCreatureXp());
+    level = levelForTotalXp(xp);
+  } else {
+    level = requestedLevel;
+    xp = totalXpForLevel(level);
+  }
+
   const leveledMaxHp = template.maxHp + (level - CREATURE_MIN_LEVEL) * CREATURE_HP_PER_LEVEL;
   const maxHp = Number.isFinite(overrides.maxHp) ? Math.max(1, Math.round(overrides.maxHp)) : leveledMaxHp;
   const moves = Array.isArray(overrides.moves)

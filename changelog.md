@@ -2,6 +2,14 @@
 
 Project changes are recorded here by date. The README stays focused on what the project is and how to run it.
 
+## 2026-09-10
+
+- Battle XP now scales with enemy level relative to the active creature's level instead of a flat 2 XP per win.
+- Equal-level wins still grant 2 XP; stronger foes grant more (up to 12), weaker foes grant less (minimum 1).
+- Trainer victories apply a 1.5x XP bonus before the min/max clamp.
+- Leveling now uses a rising XP curve (Pokemon-style): each level needs more XP than the last (`10 + 2 * (level - 1)` to advance).
+- Party/camp XP displays show progress into the current level; older flat-XP saves migrate onto the new curve while keeping their level.
+
 ## 2026-05-27
 
 - Refactored battle resource drops into a type-based `resourceDrops` module, with optional per-creature overrides for special cases.

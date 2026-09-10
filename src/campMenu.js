@@ -1,9 +1,8 @@
 import {
-  CREATURE_MAX_LEVEL,
-  CREATURE_XP_PER_LEVEL,
   PLAYER_CAMP_MAX_CREATURES,
   PLAYER_PARTY_MAX_SIZE
 } from "./constants.js";
+import { xpProgressLabel } from "./creatureXp.js";
 import { moveCatalog } from "./moves.js";
 
 function isConfirmKey(key) {
@@ -230,9 +229,7 @@ export function createCampMenuController({
   }
 
   function xpProgress(creature) {
-    return creature.level >= CREATURE_MAX_LEVEL
-      ? "MAX"
-      : `${creature.xp % CREATURE_XP_PER_LEVEL}/${CREATURE_XP_PER_LEVEL}`;
+    return xpProgressLabel(creature);
   }
 
   function drawCreatureRow(creature, x, y, width, selected, badge = "") {

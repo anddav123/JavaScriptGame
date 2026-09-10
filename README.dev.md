@@ -26,6 +26,7 @@ The browser game is loaded from `src/game.js`, which wires the shared game state
 - `src/canvasUi.js`: shared canvas drawing helpers
 - `src/constants.js`: shared sprite, save, tile, MP, and creature progression constants
 - `src/creatures.js`: creature templates, starting moves, ascension rules, and enemy template setup
+- `src/creatureXp.js`: rising XP curve helpers, level/total-XP conversion, and legacy save migration
 - `src/cutscenes.js`: story scene data and dialogue steps
 - `src/maps.js`: map terrain, buildings, furniture, NPCs, signs, triggers, encounter rates, wild creature pools, and wild level ranges
 - `src/moves.js`: move definitions, MP costs, healing moves, and move cost helpers
@@ -70,9 +71,9 @@ For small refactors, prefer moving cohesive behavior into one of these modules b
 - When camp storage is full, successful captures open a replacement menu or can be released with `Backspace`
 - Interacting with camp opens a menu to rest or swap stored creatures with party creatures
 - Creature move costs are defined in `src/moves.js`; non-damage moves default to 2 MP
-- Winning battles grants 2 XP to the active creature
-- Every 10 XP grants 1 level, up to level 100
-- Each level grants +2 max HP and +2 current HP
+- Winning battles grant XP scaled by enemy level vs the active creature's level (base 2 XP at equal level; trainer wins get a 1.5x bonus, clamped 1–12)
+- XP to the next level rises each level (`10 + 2 * (level - 1)`), so later levels take more wins
+- Every level-up grants +2 max HP and +2 current HP, up to level 100
 - Level-up messages appear after the battle closes
 - `Cubling` ascends into `Dandelio` at level 20
 - `Dandelio` ascends into `Folio` at level 50

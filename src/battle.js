@@ -754,7 +754,10 @@ export function createBattleController({
           ? `${activeCreature.nickname} defeated ${battle.trainer.name} in ${currentMap().name}. Total victories: ${gameState.player.wins}.`
           : `${activeCreature.nickname} won in ${currentMap().name}. Total victories: ${gameState.player.wins}.`;
         const droppedResourceId = tryAwardBattleResourceDrop(battle);
-        awardCreatureWinProgress(activeCreature);
+        awardCreatureWinProgress(activeCreature, {
+          enemyLevel: battle.enemy.level,
+          isTrainer: Boolean(battle.trainer)
+        });
         if (battle.trainer) {
           recordTrainerBattleResult(gameState, battle.trainer, "win");
           if (gameState.world.activeTrainerChaseId === battle.trainer.id) {

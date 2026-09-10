@@ -1,8 +1,5 @@
-import {
-  CREATURE_MAX_LEVEL,
-  CREATURE_XP_PER_LEVEL
-} from "./constants.js";
 import { canCraft, craftRecipe, hasLearnedRecipe, itemCount, removeItem, resourceCount } from "./inventory.js";
+import { xpProgressLabel } from "./creatureXp.js";
 import { itemCatalog, itemName, resourceCatalog, resourceName } from "./items.js";
 import { moveCatalog } from "./moves.js";
 import { recipeCatalog } from "./recipes.js";
@@ -455,9 +452,7 @@ export function createMenuController({
     });
 
     const viewedCreature = gameState.player.party[gameState.menu.partyIndex];
-    const xpProgress = viewedCreature.level >= CREATURE_MAX_LEVEL
-      ? "MAX"
-      : `${viewedCreature.xp % CREATURE_XP_PER_LEVEL}/${CREATURE_XP_PER_LEVEL}`;
+    const xpProgress = xpProgressLabel(viewedCreature);
     drawRoundedRect(484, 104, 398, 388, 16, "#fff7ef", "#3d271d");
     drawCreatureSprite(viewedCreature, 602, 124, 164, 150, {
       frameColor: viewedCreature.color,
