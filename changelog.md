@@ -2,6 +2,12 @@
 
 Project changes are recorded here by date. The README stays focused on what the project is and how to run it.
 
+## 2026-10-25 — Version 4
+
+- Added trainer teams that send out creatures in order, with victory recorded after the whole team is defeated and rewards for each opponent at the end of the battle.
+- Gave Frank a level 3 Sproutrunk and a level 3 Cubling.
+- Added a Cubling browser icon to prevent missing favicon requests on the game and privacy pages.
+
 ## 2026-09-10
 
 - Battle XP now scales with enemy level relative to the active creature's level instead of a flat 2 XP per win.

@@ -55,6 +55,9 @@ For small refactors, prefer moving cohesive behavior into one of these modules b
 - Brook Town is the northern area of Brookbend used for John's parcel errand before the Swim lesson
 - `triggers` let the player move between maps by stepping on door or cave tiles
 - NPCs can define a `battle` block for one-off trainer battles tracked by a persisted defeated flag
+- Trainer battles can define `team: [{ species: "Sproutrunk", level: 3 }, { species: "Cubling", level: 3 }]`; the existing `species`/`level` fields still work for a single creature
+- Trainers send out team members in order after each knockout and are only marked defeated after the whole team loses
+- When the player defeats a trainer team, XP is awarded for each opponent to the player creature that beat it, and each opponent can drop a resource; these rewards are granted after the full team is defeated
 - Trainer battle NPCs can set `battle.chaseRange` to follow the player and start battle when adjacent
 - NPC patrols can be static, horizontal/vertical, or circular depending on their map data
 - NPC movement is visually smoothed in `src/nonPlayerCharacter.js`, while player movement keeps the original tile-step behavior in `src/world.js`
@@ -82,6 +85,12 @@ For small refactors, prefer moving cohesive behavior into one of these modules b
 - Ascension rules live on creature templates in `src/creatures.js`
 
 ## Quick checks
+
+Run the trainer team regression checks with Node's built-in test runner:
+
+```bash
+node --test tests/trainerTeams.test.mjs
+```
 
 There is no package-managed test runner yet, but individual JavaScript modules can be syntax checked with Node:
 

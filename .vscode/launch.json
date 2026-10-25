@@ -5,10 +5,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "type": "editor-browser",
+            "type": "firefox",
             "request": "launch",
-            "name": "Open index.html",
-            "url": "file:///Users/andrew/src/JavaScriptGame/index.html"
+            "name": "Launch Orb Bound",
+            "url": "http://127.0.0.1:8080",
+            "webRoot": "${workspaceFolder}"
         }
     ]
 }

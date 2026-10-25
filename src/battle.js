@@ -1,4 +1,5 @@
 import {
+  creatureTemplates,
   defaultMovesForLevel,
   enemyTemplates,
   enemyTemplatesBySpecies
@@ -539,19 +540,36 @@ export function createBattleController({
     gameState.encounterTransition.enemyName = template.name;
   }
 
+  function createTrainerEnemy(member) {
+    const template = creatureTemplates[member?.species];
+    if (!template) return null;
+
+    const level = Number.isFinite(member.level)
+      ? clamp(Math.round(member.level), CREATURE_MIN_LEVEL, CREATURE_MAX_LEVEL)
+      : CREATURE_MIN_LEVEL;
+    const maxHp = leveledMaxHpForSpecies(template.species, level);
+    return {
+      ...template,
+      name: template.species,
+      color: template.color ?? getTypeColor(template.type),
+      level,
+      maxHp,
+      hp: maxHp,
+      attackBoost: 0,
+      moves: defaultMovesForLevel(template.species, level)
+    };
+  }
+
   function beginTrainerBattle(npc) {
     const battle = npc?.battle;
-    const species = battle?.species;
-    const template = enemyTemplatesBySpecies[species];
-    if (!battle || !template) {
+    const team = (Array.isArray(battle?.team) ? battle.team : [battle])
+      .map(createTrainerEnemy);
+    if (!battle || team.length === 0 || team.some((enemy) => !enemy)) {
       setMessage(`${npc?.name || "Trainer"} is not ready to battle.`);
       return;
     }
 
-    const level = Number.isFinite(battle.level)
-      ? clamp(Math.round(battle.level), CREATURE_MIN_LEVEL, CREATURE_MAX_LEVEL)
-      : CREATURE_MIN_LEVEL;
-    const maxHp = leveledMaxHpForSpecies(template.name, level);
+    const enemy = team[0];
     clearKeys();
     getActiveCreature().attackBoost = 0;
     gameState.battle = {
@@ -560,18 +578,14 @@ export function createBattleController({
         id: trainerBattleId(npc),
         mapId: trainerBattleMapId(gameState, npc),
         victoryMessage: battle.victoryMessage,
+        team,
+        teamIndex: 0,
+        defeatedOpponents: [],
         npc
       },
-      enemy: {
-        ...template,
-        level,
-        maxHp,
-        hp: maxHp,
-        attackBoost: 0,
-        moves: defaultMovesForLevel(template.name, level)
-      },
+      enemy,
       turn: "player",
-      log: [`${npc.name} sent out ${template.name} Lv ${level}!`],
+      log: [`${npc.name} sent out ${enemy.name} Lv ${enemy.level}!`],
       afterBattleMessages: [],
       afterBattleAscensions: [],
       afterBattleLearnMoves: [],
@@ -584,7 +598,7 @@ export function createBattleController({
     gameState.scene = "encounter";
     gameState.encounterTransition.active = true;
     gameState.encounterTransition.startedAt = performance.now();
-    gameState.encounterTransition.enemyName = template.name;
+    gameState.encounterTransition.enemyName = enemy.name;
   }
 
   function randomMoveId(moves) {
@@ -750,14 +764,39 @@ export function createBattleController({
       let outcomeMessage = "";
       let ascensionScenes = [];
       if (playerWon) {
+        if (battle.trainer) {
+          const trainer = battle.trainer;
+          trainer.defeatedOpponents.push({ creature: activeCreature, enemy: battle.enemy });
+          if (trainer.teamIndex + 1 < trainer.team.length) {
+            trainer.teamIndex += 1;
+            battle.enemy = trainer.team[trainer.teamIndex];
+            battle.animations = [];
+            battle.menuMode = "actions";
+            battle.selectionIndex = 0;
+            battle.itemIndex = 0;
+            battle.resolving = false;
+            writeBattleLog(`${trainer.name} sent out ${battle.enemy.name} Lv ${battle.enemy.level}!`);
+            beginPlayerTurn();
+            return;
+          }
+        }
+
         const victoryMessage = battle.trainer
           ? `${activeCreature.nickname} defeated ${battle.trainer.name} in ${currentMap().name}. Total victories: ${gameState.player.wins}.`
           : `${activeCreature.nickname} won in ${currentMap().name}. Total victories: ${gameState.player.wins}.`;
-        const droppedResourceId = tryAwardBattleResourceDrop(battle);
-        awardCreatureWinProgress(activeCreature, {
-          enemyLevel: battle.enemy.level,
-          isTrainer: Boolean(battle.trainer)
-        });
+        const defeatedOpponents = battle.trainer?.defeatedOpponents
+          ?? [{ creature: activeCreature, enemy: battle.enemy }];
+        const rewardMessages = [];
+        for (const { creature, enemy } of defeatedOpponents) {
+          const droppedResourceId = tryAwardBattleResourceDrop({ enemy });
+          awardCreatureWinProgress(creature, {
+            enemyLevel: enemy.level,
+            isTrainer: Boolean(battle.trainer)
+          });
+          if (droppedResourceId) {
+            rewardMessages.push(`${enemy.name} dropped 1 ${resourceName(droppedResourceId)}.`);
+          }
+        }
         if (battle.trainer) {
           recordTrainerBattleResult(gameState, battle.trainer, "win");
           if (gameState.world.activeTrainerChaseId === battle.trainer.id) {
@@ -771,11 +810,8 @@ export function createBattleController({
         const milestoneMessages = battle.afterBattleMessages ?? [];
         ascensionScenes = battle.afterBattleAscensions ?? [];
         const learnMoves = battle.afterBattleLearnMoves ?? [];
-        const rewardMessage = droppedResourceId
-          ? `${battle.enemy.name} dropped 1 ${resourceName(droppedResourceId)}.`
-          : "";
         const trainerMessage = battle.trainer?.victoryMessage || "";
-        const outcomeMessages = [victoryMessage, rewardMessage, trainerMessage, ...milestoneMessages].filter(Boolean);
+        const outcomeMessages = [victoryMessage, ...rewardMessages, trainerMessage, ...milestoneMessages].filter(Boolean);
         outcomeMessage = outcomeMessages.join(" ");
         if (learnMoves.length > 0 && typeof startMoveLearningSequence === "function") {
           gameState.battle = null;
@@ -976,6 +1012,7 @@ export function createBattleController({
     const nextTurnDelay = action.moveResult?.animationDuration || DEFAULT_BATTLE_TURN_DELAY;
 
     if (battle.enemy.hp <= 0 || activeCreature.hp <= 0) {
+      battle.turn = "resolving";
       setTimeout(() => {
         if (gameState.battle === battle) {
           resolveBattleOutcome();
@@ -1250,6 +1287,13 @@ export function createBattleController({
       align: "right"
     });
     drawText(battle.enemy.type ?? "Unknown", 78, 126, { font: "14px Outfit", color: "#694435" });
+    if (battle.trainer) {
+      drawText(`Creature ${battle.trainer.teamIndex + 1}/${battle.trainer.team.length}`, 298, 126, {
+        font: "14px Outfit",
+        color: "#694435",
+        align: "right"
+      });
+    }
     drawText(activeCreature.nickname, 650, 264, { font: "14px 'Press Start 2P'" });
     drawHpBar(78, 68, 220, battle.enemy.hp, battle.enemy.maxHp, "#d96459");
     drawHpBar(650, 284, 220, activeCreature.hp, activeCreature.maxHp, "#2a9d8f");
@@ -1386,7 +1430,7 @@ export function createBattleController({
           : battle.turn === "capturing"
             ? "Capture orb thrown..."
             : battle.turn === "resolving"
-              ? "Battle ending..."
+              ? "Resolving battle..."
               : `${battle.enemy.name} is acting...`,
       760,
       380,

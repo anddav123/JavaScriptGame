@@ -179,6 +179,28 @@ export const worldMaps = {
         spritePath: "assets/npc/redshirt-sprite.png",
         patrol: { axis: "x", steps: 3, intervalMs: 1200 },
         dialogue: "Oh no I'm late for my first day of patrol."
+      },
+      {
+        x: 27,
+        y: 4,
+        name: "Frank",
+        spritePath: "assets/npc/redshirt-sprite.png",
+        patrol: { shape: "circle", radius: 1, intervalMs: 900 },
+        dialogue: "Go safe travelling though the cave.",
+        introDialogue: {
+          portraitPath: "assets/dialogue/red-shirt-portrait.jpg",
+          spritePath: "assets/npc/redshirt-sprite.png"
+        },
+        battle: {
+          id: "frank",
+          team: [
+            { species: "Sproutrunk", level: 3 },
+            { species: "Cubling", level: 3 }
+          ],
+          chaseRange: 4,
+          challengeLine: "You heading for the cave? That means you're ready for a proper battle.",
+          victoryMessage: "Frank steps aside and wishes you a good journey though the cave."
+        }
       }
     ],
     triggers: [
@@ -762,16 +784,20 @@ export const worldMaps = {
       {
         x: 27,
         y: 20,
-        name: "Tamsin",
+        name: "Tom",
         spritePath: "assets/npc/redshirt-sprite.png",
         patrol: { axis: "x", steps: 2, intervalMs: 1100 },
         dialogue: "You made the crossing. That means you're ready for a proper battle.",
+        introDialogue: {
+          portraitPath: "assets/dialogue/red-shirt-portrait.jpg",
+          spritePath: "assets/npc/redshirt-sprite.png"
+        },
         battle: {
-          id: "tamsin",
+          id: "tom",
           species: "Pebblet",
           level: 8,
           chaseRange: 4,
-          victoryMessage: "Tamsin steps aside and points toward the reeds beyond the bridge."
+          victoryMessage: "Tom steps aside and points toward the reeds beyond the bridge."
         }
       }
     ],
